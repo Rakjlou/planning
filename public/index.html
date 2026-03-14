@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retroplanning Album — Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.15/dist/cdn.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15/dist/cdn.min.js"></script>
+
+  <style type="text/tailwindcss">
+    @theme {
+      --color-cod-dark: #0f0f0f;
+      --color-cod-bg: #1a1a1a;
+      --color-cod-card: #242424;
+      --color-cod-border: #333;
+      --color-cod-text: #e0e0e0;
+      --color-cod-muted: #888;
+      --color-cod-accent: #f59e0b;
+      --color-cod-green: #22c55e;
+      --color-cod-red: #ef4444;
+      --color-cod-orange: #f97316;
+      --color-cod-blue: #3b82f6;
+    }
+
+    body { background: var(--color-cod-dark); color: var(--color-cod-text); }
+
+    .phase-card { transition: all 0.2s ease; }
+    .phase-card:hover { border-color: var(--color-cod-accent); }
+    .task-done { text-decoration: line-through; opacity: 0.5; }
+    .progress-bar { transition: width 0.5s ease; }
+
+    .urgency-glow-red { box-shadow: inset 3px 0 0 var(--color-cod-red); }
+    .urgency-glow-orange { box-shadow: inset 3px 0 0 var(--color-cod-orange); }
+    .urgency-glow-yellow { box-shadow: inset 3px 0 0 var(--color-cod-accent); }
+    .urgency-glow-green { box-shadow: inset 3px 0 0 var(--color-cod-green); }
+    .urgency-glow-done { box-shadow: inset 3px 0 0 var(--color-cod-green); opacity: 0.6; }
+
+    .tab-active { border-bottom: 2px solid var(--color-cod-accent); color: var(--color-cod-accent); }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--color-cod-dark); }
+    ::-webkit-scrollbar-thumb { background: var(--color-cod-border); border-radius: 4px; }
+  </style>
+</head>
+
+<body class="min-h-screen font-sans" x-data="dashboard()" x-init="loadData()">
+
+  <!-- ══════════ HEADER ══════════ -->
+  <header class="sticky top-0 z-50 bg-cod-dark/95 backdrop-blur border-b border-cod-border px-6 py-3">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-6">
+        <h1 class="text-xl font-bold tracking-tight text-white">Retroplanning Album</h1>
+        <div class="flex items-center gap-3" x-show="tasks.length > 0">
+          <div class="w-40 h-2 bg-cod-card rounded-full overflow-hidden">
+            <div class="h-full rounded-full progress-bar"
+                 :class="globalProgress === 100 ? 'bg-cod-green' : 'bg-cod-accent'"
+                 :style="'width:' + globalProgress + '%'"></div>
+          </div>
+          <span class="text-sm font-bold text-white" x-text="globalProgress + '%'"></span>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <template x-if="releaseDateLabel">
+          <div class="text-right text-sm">
+            <span class="text-cod-accent font-semibold" x-text="releaseDateLabel"></span>
+            <span class="text-cod-muted mx-1">—</span>
+            <span class="font-mono" :class="daysLeft < 30 ? 'text-cod-red' : daysLeft < 90 ? 'text-cod-orange' : 'text-cod-green'"
+                  x-text="'J-' + daysLeft"></span>
+          </div>
+        </template>
+        <button @click="showSettings = !showSettings" class="text-xs text-cod-muted hover:text-cod-accent transition" title="Paramètres">⚙</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════ SETTINGS PANEL ══════════ -->
+  <div x-show="showSettings" x-collapse class="bg-cod-bg border-b border-cod-border px-6 py-4">
+    <div class="max-w-7xl mx-auto">
+      <h3 class="text-sm font-semibold text-white mb-3">Paramètres</h3>
+      <div class="flex gap-4 items-end">
+        <div>
+          <label class="text-xs text-cod-muted block mb-1">Date de sortie (YYYY-MM-DD)</label>
+          <input type="date" :value="releaseDate" @change="updateSettings({ releaseDate: $event.target.value })"
+                 class="bg-cod-dark border border-cod-border rounded px-3 py-1.5 text-sm text-cod-text">
+        </div>
+        <div>
+          <label class="text-xs text-cod-muted block mb-1">Label date</label>
+          <input type="text" :value="releaseDateLabel" @change="updateSettings({ releaseDateLabel: $event.target.value })"
+                 class="bg-cod-dark border border-cod-border rounded px-3 py-1.5 text-sm text-cod-text w-64"
+                 placeholder="ex: 26 septembre 2026">
+        </div>
+        <button @click="showSettings = false" class="text-xs text-cod-muted hover:text-white transition px-2 py-1.5">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ NAVIGATION ══════════ -->
+  <nav class="bg-cod-bg border-b border-cod-border px-6">
+    <div class="max-w-7xl mx-auto flex gap-1">
+      <template x-for="tab in tabs" :key="tab.id">
+        <button @click="activeTab = tab.id"
+                :class="activeTab === tab.id ? 'tab-active' : 'text-cod-muted hover:text-white'"
+                class="px-4 py-3 text-sm font-medium transition"
+                x-text="tab.label"></button>
+      </template>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-6 py-6">
+
+    <!-- ══════════ EMPTY STATE ══════════ -->
+    <div x-show="phases.length === 0 && activeTab === 'dashboard'" class="text-center py-16">
+      <div class="text-cod-muted text-lg mb-4">Aucune phase créée</div>
+      <p class="text-cod-muted text-sm mb-6">Commencez par créer une phase, puis ajoutez-y des tâches.</p>
+      <button @click="creatingPhase = true" class="bg-cod-accent text-cod-dark px-4 py-2 rounded text-sm font-semibold hover:brightness-110 transition">
+        + Nouvelle phase
+      </button>
+    </div>
+
+    <!-- ══════════ TAB: DASHBOARD ══════════ -->
+    <div x-show="activeTab === 'dashboard'" x-transition>
+
+      <!-- Légende -->
+      <div class="flex items-center gap-4 mb-4 text-xs text-cod-muted" x-show="phases.length > 0">
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-cod-red"></span> En retard ou &lt;14j</span>
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-cod-orange"></span> 14–30j</span>
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-cod-accent"></span> 30–60j</span>
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-cod-green"></span> &gt;60j ou terminé</span>
+      </div>
+
+      <!-- Phase cards -->
+      <div class="space-y-3">
+        <template x-for="phase in phases" :key="phase.id">
+          <div class="bg-cod-card rounded-lg border border-cod-border overflow-hidden transition-all duration-200"
+               :class="phaseUrgencyGlow(phase.id)">
+
+            <!-- Phase header row -->
+            <div class="px-4 py-3 cursor-pointer select-none flex items-center gap-2" @click="togglePhase(phase.id)">
+              <div class="flex items-center gap-4 flex-1 min-w-0">
+                <span class="text-cod-muted text-xs transition-transform duration-200"
+                      :class="openPhases.includes(phase.id) ? 'rotate-90' : ''" style="display:inline-block">▶</span>
+
+                <div class="w-56 shrink-0">
+                  <div class="text-sm font-semibold text-white" x-text="phase.name"></div>
+                  <div class="text-xs text-cod-muted" x-text="phase.period"></div>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <template x-if="nextTask(phase.id)">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-cod-muted">→</span>
+                      <span class="text-sm truncate" x-text="nextTask(phase.id).text"></span>
+                      <span class="text-xs font-mono shrink-0 ml-auto"
+                            :class="urgencyColor(phase.id)"
+                            x-text="nextTask(phase.id).deadline"></span>
+                    </div>
+                  </template>
+                  <template x-if="!nextTask(phase.id)">
+                    <span class="text-sm text-cod-green" x-text="phaseTasks(phase.id).length ? '✓ Terminé' : 'Aucune tâche'"></span>
+                  </template>
+                </div>
+
+                <div class="shrink-0 w-16 text-right">
+                  <template x-if="nextTask(phase.id)">
+                    <span class="text-xs font-mono font-bold px-2 py-0.5 rounded"
+                          :class="urgencyBadge(phase.id)"
+                          x-text="phaseCountdown(phase.id)"></span>
+                  </template>
+                </div>
+
+                <div class="shrink-0 flex items-center gap-2 w-24">
+                  <div class="flex-1 h-1.5 bg-cod-dark rounded-full overflow-hidden">
+                    <div class="h-full rounded-full progress-bar"
+                         :class="phaseProgress(phase.id) === 100 ? 'bg-cod-green' : 'bg-cod-accent'"
+                         :style="'width:' + phaseProgress(phase.id) + '%'"></div>
+                  </div>
+                  <span class="text-xs text-cod-muted w-8 text-right" x-text="phaseStats(phase.id)"></span>
+                </div>
+              </div>
+
+              <!-- Phase actions -->
+              <div class="flex items-center gap-1 shrink-0" @click.stop>
+                <button @click="editingPhase = editingPhase === phase.id ? null : phase.id; editPhaseData = {...phase}"
+                        class="text-cod-muted hover:text-cod-accent text-xs px-1" title="Modifier">✎</button>
+                <button @click="deletePhase(phase.id)"
+                        class="text-cod-muted hover:text-cod-red text-xs px-1" title="Supprimer">✕</button>
+              </div>
+            </div>
+
+            <!-- Phase edit form (inline) -->
+            <div x-show="editingPhase === phase.id" @click.stop class="border-t border-cod-border px-4 py-3 bg-cod-dark/50">
+              <div class="flex gap-3 items-end">
+                <div class="flex-1">
+                  <label class="text-xs text-cod-muted block mb-1">Nom</label>
+                  <input type="text" x-model="editPhaseData.name" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-sm text-cod-text">
+                </div>
+                <div class="w-40">
+                  <label class="text-xs text-cod-muted block mb-1">Période</label>
+                  <input type="text" x-model="editPhaseData.period" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-sm text-cod-text">
+                </div>
+                <div class="flex-1">
+                  <label class="text-xs text-cod-muted block mb-1">Jalons</label>
+                  <input type="text" x-model="editPhaseData.milestones" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-sm text-cod-text">
+                </div>
+                <button @click="savePhase(phase.id)" class="bg-cod-accent text-cod-dark px-3 py-1 rounded text-xs font-semibold">OK</button>
+                <button @click="editingPhase = null" class="text-cod-muted hover:text-white text-xs px-2 py-1">Annuler</button>
+              </div>
+            </div>
+
+            <!-- Task list (expandable) -->
+            <div x-show="openPhases.includes(phase.id)" x-collapse>
+              <div class="border-t border-cod-border px-4 py-2 space-y-0.5 bg-cod-dark/30">
+                <template x-for="task in phaseTasks(phase.id)" :key="task.id">
+                  <div class="flex items-start gap-3 rounded px-2 py-1.5 hover:bg-cod-card/50 transition group"
+                       :class="task.done ? 'opacity-40' : ''">
+                    <input type="checkbox" :checked="task.done" @change="toggleTask(task)"
+                           class="mt-0.5 rounded border-cod-border accent-amber-500 cursor-pointer" @click.stop>
+                    <div class="flex-1 min-w-0">
+                      <template x-if="editingTask !== task.id">
+                        <div>
+                          <div class="text-sm" :class="task.done ? 'line-through' : ''" x-text="task.text"></div>
+                          <div class="text-xs text-cod-muted mt-0.5" x-show="task.notes && !task.done" x-text="task.notes"></div>
+                        </div>
+                      </template>
+                      <template x-if="editingTask === task.id">
+                        <div class="space-y-1" @click.stop>
+                          <input type="text" x-model="editTaskData.text" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-sm text-cod-text">
+                          <div class="flex gap-2">
+                            <input type="text" x-model="editTaskData.deadline" placeholder="Deadline" class="bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text w-32">
+                            <input type="date" x-model="editTaskData.deadlineDate" class="bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
+                            <label class="flex items-center gap-1 text-xs text-cod-muted">
+                              <input type="checkbox" x-model="editTaskData.key"> Clé
+                            </label>
+                          </div>
+                          <input type="text" x-model="editTaskData.notes" placeholder="Notes" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
+                          <div class="flex gap-2">
+                            <button @click="saveTask(task.id)" class="bg-cod-accent text-cod-dark px-2 py-0.5 rounded text-xs font-semibold">OK</button>
+                            <button @click="editingTask = null" class="text-cod-muted text-xs">Annuler</button>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                      <span x-show="task.key" class="text-xs px-1.5 py-0.5 rounded bg-cod-accent/20 text-cod-accent">clé</span>
+                      <span class="text-xs font-mono"
+                            :class="task.done ? 'text-cod-muted' : taskUrgencyColor(task)"
+                            x-text="task.deadline"></span>
+                      <button @click.stop="editingTask = editingTask === task.id ? null : task.id; editTaskData = {...task}"
+                              class="text-cod-muted hover:text-cod-accent text-xs opacity-0 group-hover:opacity-100 transition">✎</button>
+                      <button @click.stop="deleteTask(task.id)"
+                              class="text-cod-muted hover:text-cod-red text-xs opacity-0 group-hover:opacity-100 transition">✕</button>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- Add task form -->
+                <div x-show="addingTaskPhase === phase.id" class="mt-2 bg-cod-card/50 rounded p-3 space-y-2" @click.stop>
+                  <input type="text" x-model="newTask.text" placeholder="Description de la tâche" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1.5 text-sm text-cod-text">
+                  <div class="flex gap-2">
+                    <input type="text" x-model="newTask.deadline" placeholder="Deadline (texte)" class="bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text flex-1">
+                    <input type="date" x-model="newTask.deadlineDate" class="bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
+                    <label class="flex items-center gap-1 text-xs text-cod-muted">
+                      <input type="checkbox" x-model="newTask.key"> Clé
+                    </label>
+                  </div>
+                  <input type="text" x-model="newTask.notes" placeholder="Notes (optionnel)" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
+                  <div class="flex gap-2">
+                    <button @click="createTask(phase.id)" class="bg-cod-accent text-cod-dark px-3 py-1 rounded text-xs font-semibold">Ajouter</button>
+                    <button @click="addingTaskPhase = null" class="text-cod-muted text-xs">Annuler</button>
+                  </div>
+                </div>
+
+                <button x-show="addingTaskPhase !== phase.id"
+                        @click.stop="addingTaskPhase = phase.id; newTask = { text: '', deadline: '', deadlineDate: '', notes: '', key: false }"
+                        class="text-xs text-cod-muted hover:text-cod-accent mt-2 transition block w-full text-left px-2 py-1">
+                  + Ajouter une tâche
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- New phase form -->
+      <div x-show="creatingPhase" class="mt-4 bg-cod-card rounded-lg border border-cod-border p-4 space-y-3">
+        <h3 class="text-sm font-semibold text-white">Nouvelle phase</h3>
+        <div class="flex gap-3 items-end">
+          <div class="flex-1">
+            <label class="text-xs text-cod-muted block mb-1">Nom</label>
+            <input type="text" x-model="newPhase.name" placeholder="ex: 1 — Production" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1.5 text-sm text-cod-text">
+          </div>
+          <div class="w-40">
+            <label class="text-xs text-cod-muted block mb-1">Période</label>
+            <input type="text" x-model="newPhase.period" placeholder="ex: mars → mai" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1.5 text-sm text-cod-text">
+          </div>
+          <div class="flex-1">
+            <label class="text-xs text-cod-muted block mb-1">Jalons</label>
+            <input type="text" x-model="newPhase.milestones" placeholder="Résumé des jalons clés" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1.5 text-sm text-cod-text">
+          </div>
+          <button @click="createPhase()" class="bg-cod-accent text-cod-dark px-4 py-1.5 rounded text-sm font-semibold">Créer</button>
+          <button @click="creatingPhase = false" class="text-cod-muted hover:text-white text-xs px-2 py-1.5">Annuler</button>
+        </div>
+      </div>
+
+      <button x-show="phases.length > 0 && !creatingPhase"
+              @click="creatingPhase = true; newPhase = { name: '', period: '', milestones: '' }"
+              class="mt-4 text-sm text-cod-muted hover:text-cod-accent transition">
+        + Nouvelle phase
+      </button>
+    </div>
+
+    <!-- ══════════ TAB: DÉCISIONS ══════════ -->
+    <div x-show="activeTab === 'decisions'" x-transition>
+      <h2 class="text-lg font-semibold text-white mb-4">Décisions à prendre</h2>
+
+      <div class="space-y-3 mb-8">
+        <template x-for="d in decisions" :key="d.id">
+          <div class="bg-cod-card rounded-lg border border-cod-border p-4"
+               :class="{ 'border-l-3 border-l-cod-red': d.urgency === 'haute', 'border-l-3 border-l-cod-orange': d.urgency === 'moyenne', 'border-l-3 border-l-cod-accent': d.urgency === 'basse' }">
+
+            <template x-if="editingDecision !== d.id">
+              <div>
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-sm font-semibold text-white" x-text="d.label"></span>
+                      <span class="text-xs px-2 py-0.5 rounded" :class="{
+                        'bg-cod-red/20 text-cod-red': d.urgency === 'haute',
+                        'bg-cod-orange/20 text-cod-orange': d.urgency === 'moyenne',
+                        'bg-cod-accent/20 text-cod-accent': d.urgency === 'basse'
+                      }" x-text="d.urgency"></span>
+                    </div>
+                    <div class="text-xs text-cod-muted" x-text="d.impact"></div>
+                    <div class="text-xs text-cod-muted mt-1" x-text="'Échéance : ' + d.deadline"></div>
+                  </div>
+                  <div class="ml-4 shrink-0 flex items-center gap-2">
+                    <select :value="d.status" @change="updateDecision(d.id, { status: $event.target.value })"
+                            class="bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
+                      <option value="open">⬜ Ouvert</option>
+                      <option value="discussed">💬 Discuté</option>
+                      <option value="decided">✅ Décidé</option>
+                    </select>
+                    <button @click="editingDecision = d.id; editDecisionData = {...d}" class="text-cod-muted hover:text-cod-accent text-xs">✎</button>
+                    <button @click="deleteDecision(d.id)" class="text-cod-muted hover:text-cod-red text-xs">✕</button>
+                  </div>
+                </div>
+                <div class="mt-3" x-show="d.status !== 'open' || d.notes">
+                  <textarea :value="d.notes" @change="updateDecision(d.id, { notes: $event.target.value })"
+                            placeholder="Notes sur cette décision..."
+                            class="w-full bg-cod-dark border border-cod-border rounded px-3 py-2 text-xs text-cod-text resize-none h-16 focus:border-cod-accent outline-none"></textarea>
+                </div>
+                <button x-show="d.status === 'open' && !d.notes"
+                        @click="updateDecision(d.id, { notes: ' ' })"
+                        class="text-xs text-cod-muted hover:text-cod-accent mt-2 transition">+ Ajouter une note</button>
+              </div>
+            </template>
+
+            <template x-if="editingDecision === d.id">
+              <div class="space-y-2">
+                <input type="text" x-model="editDecisionData.label" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1.5 text-sm text-cod-text">
+                <input type="text" x-model="editDecisionData.impact" placeholder="Impact" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
+                <div class="flex gap-2">
+                  <select x-model="editDecisionData.urgency" class="bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
+                    <option value="haute">Haute</option>
+                    <option value="moyenne">Moyenne</option>
+                    <option value="basse">Basse</option>
+                  </select>
+                  <input type="text" x-model="editDecisionData.deadline" placeholder="Échéance" class="bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text flex-1">
+                </div>
+                <div class="flex gap-2">
+                  <button @click="saveDecision(d.id)" class="bg-cod-accent text-cod-dark px-3 py-1 rounded text-xs font-semibold">OK</button>
+                  <button @click="editingDecision = null" class="text-cod-muted text-xs">Annuler</button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+
+      <!-- New decision form -->
+      <div x-show="creatingDecision" class="bg-cod-card rounded-lg border border-cod-border p-4 space-y-2 mb-6">
+        <h3 class="text-sm font-semibold text-white">Nouvelle décision</h3>
+        <input type="text" x-model="newDecision.label" placeholder="Intitulé" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1.5 text-sm text-cod-text">
+        <input type="text" x-model="newDecision.impact" placeholder="Impact si non prise" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
+        <div class="flex gap-2">
+          <select x-model="newDecision.urgency" class="bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
+            <option value="haute">Haute</option>
+            <option value="moyenne">Moyenne</option>
+            <option value="basse">Basse</option>
+          </select>
+          <input type="text" x-model="newDecision.deadline" placeholder="Échéance" class="bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text flex-1">
+        </div>
+        <div class="flex gap-2">
+          <button @click="createDecision()" class="bg-cod-accent text-cod-dark px-3 py-1 rounded text-xs font-semibold">Créer</button>
+          <button @click="creatingDecision = false" class="text-cod-muted text-xs">Annuler</button>
+        </div>
+      </div>
+
+      <button x-show="!creatingDecision"
+              @click="creatingDecision = true; newDecision = { label: '', impact: '', urgency: 'moyenne', deadline: '' }"
+              class="text-sm text-cod-muted hover:text-cod-accent transition mb-8">
+        + Nouvelle décision
+      </button>
+
+      <!-- Decision log -->
+      <h2 class="text-lg font-semibold text-white mb-4 mt-8">Journal des décisions</h2>
+      <div class="bg-cod-card rounded-lg border border-cod-border divide-y divide-cod-border mb-4" x-show="decisionLog.length > 0">
+        <template x-for="(entry, i) in decisionLog" :key="i">
+          <div class="px-4 py-3 flex gap-4">
+            <span class="text-xs text-cod-muted font-mono shrink-0" x-text="entry.date"></span>
+            <span class="text-sm" x-text="entry.text"></span>
+          </div>
+        </template>
+      </div>
+
+      <!-- Add log entry -->
+      <div class="flex gap-2 items-center">
+        <input type="text" x-model="newLogEntry" placeholder="Ajouter une entrée au journal..."
+               @keydown.enter="addLogEntry()"
+               class="flex-1 bg-cod-dark border border-cod-border rounded px-3 py-1.5 text-sm text-cod-text">
+        <button @click="addLogEntry()" class="text-xs text-cod-accent hover:underline" x-show="newLogEntry.trim()">Ajouter</button>
+      </div>
+    </div>
+
+    <!-- ══════════ TAB: RISQUES ══════════ -->
+    <div x-show="activeTab === 'risks'" x-transition>
+      <h2 class="text-lg font-semibold text-white mb-4">Suivi des risques</h2>
+
+      <div class="space-y-3 mb-4">
+        <template x-for="r in risks" :key="r.id">
+          <div class="bg-cod-card rounded-lg border border-cod-border p-4">
+            <template x-if="editingRisk !== r.id">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <div class="font-medium text-white text-sm" x-text="r.risk"></div>
+                  <div class="text-xs text-cod-muted mt-1"><span class="text-cod-orange">Impact :</span> <span x-text="r.impact"></span></div>
+                  <div class="text-xs text-cod-muted mt-1"><span class="text-cod-green">Mitigation :</span> <span x-text="r.mitigation"></span></div>
+                </div>
+                <div class="flex items-center gap-2 ml-4">
+                  <select :value="r.status" @change="updateRisk(r.id, { status: $event.target.value })"
+                          class="bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
+                    <option value="active">⚠️ Actif</option>
+                    <option value="mitigated">🛡️ Mitigé</option>
+                    <option value="resolved">✅ Résolu</option>
+                  </select>
+                  <button @click="editingRisk = r.id; editRiskData = {...r}" class="text-cod-muted hover:text-cod-accent text-xs">✎</button>
+                  <button @click="deleteRisk(r.id)" class="text-cod-muted hover:text-cod-red text-xs">✕</button>
+                </div>
+              </div>
+            </template>
+
+            <template x-if="editingRisk === r.id">
+              <div class="space-y-2">
+                <input type="text" x-model="editRiskData.risk" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1.5 text-sm text-cod-text">
+                <input type="text" x-model="editRiskData.impact" placeholder="Impact" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
+                <input type="text" x-model="editRiskData.mitigation" placeholder="Mitigation" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
+                <div class="flex gap-2">
+                  <button @click="saveRisk(r.id)" class="bg-cod-accent text-cod-dark px-3 py-1 rounded text-xs font-semibold">OK</button>
+                  <button @click="editingRisk = null" class="text-cod-muted text-xs">Annuler</button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+
+      <!-- New risk form -->
+      <div x-show="creatingRisk" class="bg-cod-card rounded-lg border border-cod-border p-4 space-y-2 mb-4">
+        <h3 class="text-sm font-semibold text-white">Nouveau risque</h3>
+        <input type="text" x-model="newRisk.risk" placeholder="Description du risque" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1.5 text-sm text-cod-text">
+        <input type="text" x-model="newRisk.impact" placeholder="Impact" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
+        <input type="text" x-model="newRisk.mitigation" placeholder="Mitigation" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
+        <div class="flex gap-2">
+          <button @click="createRisk()" class="bg-cod-accent text-cod-dark px-3 py-1 rounded text-xs font-semibold">Créer</button>
+          <button @click="creatingRisk = false" class="text-cod-muted text-xs">Annuler</button>
+        </div>
+      </div>
+
+      <button x-show="!creatingRisk"
+              @click="creatingRisk = true; newRisk = { risk: '', impact: '', mitigation: '' }"
+              class="text-sm text-cod-muted hover:text-cod-accent transition">
+        + Nouveau risque
+      </button>
+    </div>
+
+  </main>
+
+  <footer class="border-t border-cod-border px-6 py-4 mt-8">
+    <div class="max-w-7xl mx-auto flex justify-between text-xs text-cod-muted">
+      <span>Données synchronisées avec le serveur (data.json)</span>
+      <span x-text="tasks.length + ' tâches · ' + phases.length + ' phases'"></span>
+    </div>
+  </footer>
+
+<script>
+function dashboard() {
+  return {
+
+    // ── Server data (loaded via fetch) ───────────────────
+
+    releaseDate: '',
+    releaseDateLabel: '',
+    phases: [],
+    tasks: [],
+    decisions: [],
+    decisionLog: [],
+    risks: [],
+
+    // ── UI-only state (not persisted) ────────────────────
+
+    activeTab: 'dashboard',
+    openPhases: [],
+    showSettings: false,
+
+    creatingPhase: false,
+    editingPhase: null,
+    editPhaseData: {},
+    newPhase: { name: '', period: '', milestones: '' },
+
+    addingTaskPhase: null,
+    editingTask: null,
+    editTaskData: {},
+    newTask: { text: '', deadline: '', deadlineDate: '', notes: '', key: false },
+
+    creatingDecision: false,
+    editingDecision: null,
+    editDecisionData: {},
+    newDecision: { label: '', impact: '', urgency: 'moyenne', deadline: '' },
+    newLogEntry: '',
+
+    creatingRisk: false,
+    editingRisk: null,
+    editRiskData: {},
+    newRisk: { risk: '', impact: '', mitigation: '' },
+
+    tabs: [
+      { id: 'dashboard', label: 'Dashboard' },
+      { id: 'decisions', label: 'Décisions' },
+      { id: 'risks',     label: 'Risques' },
+    ],
+
+    // ── Computed ──────────────────────────────────────────
+
+    get daysLeft() {
+      if (!this.releaseDate) return 0;
+      return Math.ceil((new Date(this.releaseDate) - new Date()) / 86400000);
+    },
+
+    get globalProgress() {
+      if (!this.tasks.length) return 0;
+      const done = this.tasks.filter(t => t.done).length;
+      return Math.round(done / this.tasks.length * 100);
+    },
+
+    // ── Data loading ─────────────────────────────────────
+
+    async loadData() {
+      const res = await fetch('/api/data');
+      const data = await res.json();
+      this.releaseDate = data.releaseDate;
+      this.releaseDateLabel = data.releaseDateLabel;
+      this.phases = data.phases;
+      this.tasks = data.tasks;
+      this.decisions = data.decisions;
+      this.decisionLog = data.decisionLog;
+      this.risks = data.risks;
+      this.rebuildNextTaskCache();
+    },
+
+    // ── API helpers ──────────────────────────────────────
+
+    async api(method, path, body) {
+      const opts = { method, headers: { 'Content-Type': 'application/json' } };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch('/api/' + path, opts);
+      return res.json();
+    },
+
+    // ── Settings ─────────────────────────────────────────
+
+    async updateSettings(fields) {
+      await this.api('PUT', 'settings', fields);
+      if (fields.releaseDate !== undefined) this.releaseDate = fields.releaseDate;
+      if (fields.releaseDateLabel !== undefined) this.releaseDateLabel = fields.releaseDateLabel;
+    },
+
+    // ── Phases ───────────────────────────────────────────
+
+    async createPhase() {
+      const phase = await this.api('POST', 'phases', this.newPhase);
+      this.phases.push(phase);
+      this.creatingPhase = false;
+      this.newPhase = { name: '', period: '', milestones: '' };
+    },
+
+    async savePhase(id) {
+      const { name, period, milestones } = this.editPhaseData;
+      const updated = await this.api('PUT', `phases/${id}`, { name, period, milestones });
+      const idx = this.phases.findIndex(p => p.id === id);
+      if (idx >= 0) this.phases[idx] = updated;
+      this.editingPhase = null;
+    },
+
+    async deletePhase(id) {
+      if (!confirm('Supprimer cette phase et toutes ses tâches ?')) return;
+      await this.api('DELETE', `phases/${id}`);
+      this.phases = this.phases.filter(p => p.id !== id);
+      this.tasks = this.tasks.filter(t => t.phase !== id);
+      this.rebuildNextTaskCache();
+    },
+
+    // ── Tasks ────────────────────────────────────────────
+
+    phaseTasks(phaseId) {
+      return this.tasks.filter(t => t.phase === phaseId);
+    },
+
+    _nextTaskCache: {},
+
+    rebuildNextTaskCache() {
+      const map = {};
+      for (const phase of this.phases) {
+        map[phase.id] = this.tasks
+          .filter(t => t.phase === phase.id && !t.done && t.deadlineDate)
+          .sort((a, b) => new Date(a.deadlineDate) - new Date(b.deadlineDate))[0] || null;
+      }
+      this._nextTaskCache = map;
+    },
+
+    nextTask(phaseId) {
+      return this._nextTaskCache[phaseId] ?? null;
+    },
+
+    async toggleTask(task) {
+      task.done = !task.done;
+      await this.api('PUT', `tasks/${task.id}`, { done: task.done });
+      this.rebuildNextTaskCache();
+    },
+
+    async createTask(phaseId) {
+      const task = await this.api('POST', 'tasks', { ...this.newTask, phase: phaseId });
+      this.tasks.push(task);
+      this.addingTaskPhase = null;
+      this.newTask = { text: '', deadline: '', deadlineDate: '', notes: '', key: false };
+      this.rebuildNextTaskCache();
+    },
+
+    async saveTask(id) {
+      const { text, deadline, deadlineDate, notes, key } = this.editTaskData;
+      const updated = await this.api('PUT', `tasks/${id}`, { text, deadline, deadlineDate, notes, key });
+      const idx = this.tasks.findIndex(t => t.id === id);
+      if (idx >= 0) this.tasks[idx] = updated;
+      this.editingTask = null;
+      this.rebuildNextTaskCache();
+    },
+
+    async deleteTask(id) {
+      if (!confirm('Supprimer cette tâche ?')) return;
+      await this.api('DELETE', `tasks/${id}`);
+      this.tasks = this.tasks.filter(t => t.id !== id);
+      this.rebuildNextTaskCache();
+    },
+
+    // ── Decisions ────────────────────────────────────────
+
+    async updateDecision(id, fields) {
+      const updated = await this.api('PUT', `decisions/${id}`, fields);
+      const idx = this.decisions.findIndex(d => d.id === id);
+      if (idx >= 0) this.decisions[idx] = updated;
+    },
+
+    async createDecision() {
+      const d = await this.api('POST', 'decisions', this.newDecision);
+      this.decisions.push(d);
+      this.creatingDecision = false;
+      this.newDecision = { label: '', impact: '', urgency: 'moyenne', deadline: '' };
+    },
+
+    async saveDecision(id) {
+      const { label, impact, urgency, deadline } = this.editDecisionData;
+      const updated = await this.api('PUT', `decisions/${id}`, { label, impact, urgency, deadline });
+      const idx = this.decisions.findIndex(d => d.id === id);
+      if (idx >= 0) this.decisions[idx] = updated;
+      this.editingDecision = null;
+    },
+
+    async deleteDecision(id) {
+      if (!confirm('Supprimer cette décision ?')) return;
+      await this.api('DELETE', `decisions/${id}`);
+      this.decisions = this.decisions.filter(d => d.id !== id);
+    },
+
+    async addLogEntry() {
+      if (!this.newLogEntry.trim()) return;
+      const entry = await this.api('POST', 'decision-log', { text: this.newLogEntry.trim() });
+      this.decisionLog.push(entry);
+      this.newLogEntry = '';
+    },
+
+    // ── Risks ────────────────────────────────────────────
+
+    async updateRisk(id, fields) {
+      const updated = await this.api('PUT', `risks/${id}`, fields);
+      const idx = this.risks.findIndex(r => r.id === id);
+      if (idx >= 0) this.risks[idx] = updated;
+    },
+
+    async createRisk() {
+      const r = await this.api('POST', 'risks', this.newRisk);
+      this.risks.push(r);
+      this.creatingRisk = false;
+      this.newRisk = { risk: '', impact: '', mitigation: '' };
+    },
+
+    async saveRisk(id) {
+      const { risk, impact, mitigation } = this.editRiskData;
+      const updated = await this.api('PUT', `risks/${id}`, { risk, impact, mitigation });
+      const idx = this.risks.findIndex(r => r.id === id);
+      if (idx >= 0) this.risks[idx] = updated;
+      this.editingRisk = null;
+    },
+
+    async deleteRisk(id) {
+      if (!confirm('Supprimer ce risque ?')) return;
+      await this.api('DELETE', `risks/${id}`);
+      this.risks = this.risks.filter(r => r.id !== id);
+    },
+
+    // ── Phase display helpers ────────────────────────────
+
+    togglePhase(phaseId) {
+      const idx = this.openPhases.indexOf(phaseId);
+      if (idx >= 0) this.openPhases.splice(idx, 1);
+      else this.openPhases.push(phaseId);
+    },
+
+    phaseDaysLeft(phaseId) {
+      const next = this.nextTask(phaseId);
+      if (!next) return Infinity;
+      return Math.ceil((new Date(next.deadlineDate) - new Date()) / 86400000);
+    },
+
+    phaseCountdown(phaseId) {
+      if (!this.nextTask(phaseId)) return '';
+      const days = this.phaseDaysLeft(phaseId);
+      if (days < 0) return 'J+' + Math.abs(days);
+      if (days === 0) return 'Auj.';
+      return 'J-' + days;
+    },
+
+    urgencyColor(phaseId) {
+      const d = this.phaseDaysLeft(phaseId);
+      if (d < 14) return 'text-cod-red';
+      if (d < 30) return 'text-cod-orange';
+      if (d < 60) return 'text-cod-accent';
+      return 'text-cod-green';
+    },
+
+    urgencyBadge(phaseId) {
+      const d = this.phaseDaysLeft(phaseId);
+      if (d < 14) return 'bg-cod-red/20 text-cod-red';
+      if (d < 30) return 'bg-cod-orange/20 text-cod-orange';
+      if (d < 60) return 'bg-cod-accent/20 text-cod-accent';
+      return 'bg-cod-green/20 text-cod-green';
+    },
+
+    phaseUrgencyGlow(phaseId) {
+      if (!this.nextTask(phaseId)) return this.phaseTasks(phaseId).length ? 'urgency-glow-done' : '';
+      const d = this.phaseDaysLeft(phaseId);
+      if (d < 14) return 'urgency-glow-red';
+      if (d < 30) return 'urgency-glow-orange';
+      if (d < 60) return 'urgency-glow-yellow';
+      return 'urgency-glow-green';
+    },
+
+    taskUrgencyColor(task) {
+      if (!task.deadlineDate) return 'text-cod-muted';
+      const d = Math.ceil((new Date(task.deadlineDate) - new Date()) / 86400000);
+      if (d < 14) return 'text-cod-red';
+      if (d < 30) return 'text-cod-orange';
+      if (d < 60) return 'text-cod-accent';
+      return 'text-cod-muted';
+    },
+
+    phaseProgress(phaseId) {
+      const tasks = this.phaseTasks(phaseId);
+      const done = tasks.filter(t => t.done).length;
+      return tasks.length ? Math.round(done / tasks.length * 100) : 0;
+    },
+
+    phaseStats(phaseId) {
+      const tasks = this.phaseTasks(phaseId);
+      const done = tasks.filter(t => t.done).length;
+      return done + '/' + tasks.length;
+    },
+  };
+}
+</script>
+
+</body>
+</html>

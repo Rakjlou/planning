@@ -1,0 +1,12 @@
+{
+  "name": "retroplanning-server",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
