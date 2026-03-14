@@ -783,56 +783,5 @@
       "date": "13 mars 2026",
       "text": "Scénario retenu : sortie le 26 septembre 2026."
     }
-  ],
-  "risks": [
-    {
-      "id": "r1",
-      "risk": "Mix qui traîne",
-      "impact": "Cascade sur mastering + reste du planning",
-      "mitigation": "Deadline ferme avec le mixeur.",
-      "status": "active"
-    },
-    {
-      "id": "r2",
-      "risk": "Ingé mastering indisponible",
-      "impact": "Retarde singles + distrib",
-      "mitigation": "Contacter plusieurs ingés en avance.",
-      "status": "active"
-    },
-    {
-      "id": "r3",
-      "risk": "Artwork pas prêt",
-      "impact": "Bloque distribution + pressage",
-      "mitigation": "Deadline ferme avec l'artiste.",
-      "status": "active"
-    },
-    {
-      "id": "r4",
-      "risk": "Délai distributeur",
-      "impact": "Single sort en retard",
-      "mitigation": "Soumettre avec marge.",
-      "status": "active"
-    },
-    {
-      "id": "r5",
-      "risk": "Perte de motivation pendant l'été",
-      "impact": "L'attente tue l'élan",
-      "mitigation": "Jalons intermédiaires (clip, single, booking).",
-      "status": "active"
-    },
-    {
-      "id": "r6",
-      "risk": "Pas assez de dates confirmées",
-      "impact": "Tournée trop maigre, pas rentable",
-      "mitigation": "Commencer booking tôt, split dates.",
-      "status": "active"
-    },
-    {
-      "id": "r7",
-      "risk": "Merch pas prêt à temps",
-      "impact": "Manque à gagner en concert",
-      "mitigation": "Commander dès que l'artwork est finalisé.",
-      "status": "active"
-    }
   ]
 }

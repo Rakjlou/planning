@@ -424,67 +424,6 @@
       </div>
     </div>
 
-    <!-- ══════════ TAB: RISQUES ══════════ -->
-    <div x-show="activeTab === 'risks'" x-transition>
-      <h2 class="text-lg font-semibold text-white mb-4">Suivi des risques</h2>
-
-      <div class="space-y-3 mb-4">
-        <template x-for="r in risks" :key="r.id">
-          <div class="bg-cod-card rounded-lg border border-cod-border p-4">
-            <template x-if="editingRisk !== r.id">
-              <div class="flex items-start justify-between">
-                <div class="flex-1">
-                  <div class="font-medium text-white text-sm" x-text="r.risk"></div>
-                  <div class="text-xs text-cod-muted mt-1"><span class="text-cod-orange">Impact :</span> <span x-text="r.impact"></span></div>
-                  <div class="text-xs text-cod-muted mt-1"><span class="text-cod-green">Mitigation :</span> <span x-text="r.mitigation"></span></div>
-                </div>
-                <div class="flex items-center gap-2 ml-4">
-                  <select :value="r.status" @change="updateRisk(r.id, { status: $event.target.value })"
-                          class="bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
-                    <option value="active">⚠️ Actif</option>
-                    <option value="mitigated">🛡️ Mitigé</option>
-                    <option value="resolved">✅ Résolu</option>
-                  </select>
-                  <button @click="editingRisk = r.id; editRiskData = {...r}" class="text-cod-muted hover:text-cod-accent text-xs">✎</button>
-                  <button @click="deleteRisk(r.id)" class="text-cod-muted hover:text-cod-red text-xs">✕</button>
-                </div>
-              </div>
-            </template>
-
-            <template x-if="editingRisk === r.id">
-              <div class="space-y-2">
-                <input type="text" x-model="editRiskData.risk" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1.5 text-sm text-cod-text">
-                <input type="text" x-model="editRiskData.impact" placeholder="Impact" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
-                <input type="text" x-model="editRiskData.mitigation" placeholder="Mitigation" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
-                <div class="flex gap-2">
-                  <button @click="saveRisk(r.id)" class="bg-cod-accent text-cod-dark px-3 py-1 rounded text-xs font-semibold">OK</button>
-                  <button @click="editingRisk = null" class="text-cod-muted text-xs">Annuler</button>
-                </div>
-              </div>
-            </template>
-          </div>
-        </template>
-      </div>
-
-      <!-- New risk form -->
-      <div x-show="creatingRisk" class="bg-cod-card rounded-lg border border-cod-border p-4 space-y-2 mb-4">
-        <h3 class="text-sm font-semibold text-white">Nouveau risque</h3>
-        <input type="text" x-model="newRisk.risk" placeholder="Description du risque" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1.5 text-sm text-cod-text">
-        <input type="text" x-model="newRisk.impact" placeholder="Impact" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
-        <input type="text" x-model="newRisk.mitigation" placeholder="Mitigation" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
-        <div class="flex gap-2">
-          <button @click="createRisk()" class="bg-cod-accent text-cod-dark px-3 py-1 rounded text-xs font-semibold">Créer</button>
-          <button @click="creatingRisk = false" class="text-cod-muted text-xs">Annuler</button>
-        </div>
-      </div>
-
-      <button x-show="!creatingRisk"
-              @click="creatingRisk = true; newRisk = { risk: '', impact: '', mitigation: '' }"
-              class="text-sm text-cod-muted hover:text-cod-accent transition">
-        + Nouveau risque
-      </button>
-    </div>
-
   </main>
 
   <footer class="border-t border-cod-border px-6 py-4 mt-8">
@@ -506,8 +445,6 @@ function dashboard() {
     tasks: [],
     decisions: [],
     decisionLog: [],
-    risks: [],
-
     // ── UI-only state (not persisted) ────────────────────
 
     activeTab: 'dashboard',
@@ -530,15 +467,9 @@ function dashboard() {
     newDecision: { label: '', impact: '', urgency: 'moyenne', deadline: '' },
     newLogEntry: '',
 
-    creatingRisk: false,
-    editingRisk: null,
-    editRiskData: {},
-    newRisk: { risk: '', impact: '', mitigation: '' },
-
     tabs: [
       { id: 'dashboard', label: 'Dashboard' },
       { id: 'decisions', label: 'Décisions' },
-      { id: 'risks',     label: 'Risques' },
     ],
 
     // ── Computed ──────────────────────────────────────────
@@ -565,7 +496,6 @@ function dashboard() {
       this.tasks = data.tasks;
       this.decisions = data.decisions;
       this.decisionLog = data.decisionLog;
-      this.risks = data.risks;
       this.rebuildNextTaskCache();
     },
 
@@ -697,35 +627,6 @@ function dashboard() {
       const entry = await this.api('POST', 'decision-log', { text: this.newLogEntry.trim() });
       this.decisionLog.push(entry);
       this.newLogEntry = '';
-    },
-
-    // ── Risks ────────────────────────────────────────────
-
-    async updateRisk(id, fields) {
-      const updated = await this.api('PUT', `risks/${id}`, fields);
-      const idx = this.risks.findIndex(r => r.id === id);
-      if (idx >= 0) this.risks[idx] = updated;
-    },
-
-    async createRisk() {
-      const r = await this.api('POST', 'risks', this.newRisk);
-      this.risks.push(r);
-      this.creatingRisk = false;
-      this.newRisk = { risk: '', impact: '', mitigation: '' };
-    },
-
-    async saveRisk(id) {
-      const { risk, impact, mitigation } = this.editRiskData;
-      const updated = await this.api('PUT', `risks/${id}`, { risk, impact, mitigation });
-      const idx = this.risks.findIndex(r => r.id === id);
-      if (idx >= 0) this.risks[idx] = updated;
-      this.editingRisk = null;
-    },
-
-    async deleteRisk(id) {
-      if (!confirm('Supprimer ce risque ?')) return;
-      await this.api('DELETE', `risks/${id}`);
-      this.risks = this.risks.filter(r => r.id !== id);
     },
 
     // ── Phase display helpers ────────────────────────────

@@ -16,7 +16,6 @@ const EMPTY_DATA = {
   tasks: [],
   decisions: [],
   decisionLog: [],
-  risks: [],
 };
 
 // ── JSON read/write with sequential write queue ──────────
@@ -203,41 +202,6 @@ app.post('/api/decision-log', async (req, res) => {
     return entry;
   });
   res.status(201).json(entry);
-});
-
-// ── Risks CRUD ───────────────────────────────────────────
-
-app.post('/api/risks', async (req, res) => {
-  const risk = await mutate(data => {
-    const risk = {
-      id: nextId(data.risks, 'r-'),
-      risk: req.body.risk || '',
-      impact: req.body.impact || '',
-      mitigation: req.body.mitigation || '',
-      status: 'active',
-    };
-    data.risks.push(risk);
-    return risk;
-  });
-  res.status(201).json(risk);
-});
-
-app.put('/api/risks/:id', async (req, res) => {
-  const updated = await mutate(data => {
-    const r = data.risks.find(r => r.id === req.params.id);
-    if (!r) return null;
-    Object.assign(r, req.body, { id: r.id });
-    return r;
-  });
-  if (!updated) return res.status(404).json({ error: 'Risk not found' });
-  res.json(updated);
-});
-
-app.delete('/api/risks/:id', async (req, res) => {
-  await mutate(data => {
-    data.risks = data.risks.filter(r => r.id !== req.params.id);
-  });
-  res.json({ ok: true });
 });
 
 // ── Start ────────────────────────────────────────────────
