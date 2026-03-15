@@ -10,6 +10,7 @@ const PORT = process.env.PORT || 3000;
 // ── Empty database template ──────────────────────────────
 
 const EMPTY_DATA = {
+  contributors: [],
   phases: [],
   tasks: [],
   decisionLog: [],
@@ -142,6 +143,7 @@ export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
           isReleaseDate: req.body.isReleaseDate || false,
           done: false,
           decisions: req.body.decisions || [],
+          contributors: req.body.contributors || [],
         };
         data.tasks.push(task);
         return task;
@@ -189,6 +191,35 @@ export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
       return entry;
     });
     res.status(201).json(entry);
+  });
+
+  // ── Contributors CRUD ──────────────────────────────────
+
+  app.post('/api/contributors', async (req, res) => {
+    const name = (req.body.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'Name required' });
+    const result = await mutate(data => {
+      if (!data.contributors) data.contributors = [];
+      if (data.contributors.includes(name)) return null;
+      data.contributors.push(name);
+      return name;
+    });
+    if (result === null) return res.status(409).json({ error: 'Already exists' });
+    res.status(201).json({ name: result });
+  });
+
+  app.delete('/api/contributors/:name', async (req, res) => {
+    const name = decodeURIComponent(req.params.name);
+    await mutate(data => {
+      if (!data.contributors) data.contributors = [];
+      data.contributors = data.contributors.filter(c => c !== name);
+      for (const task of data.tasks) {
+        if (task.contributors) {
+          task.contributors = task.contributors.filter(c => c !== name);
+        }
+      }
+    });
+    res.json({ ok: true });
   });
 
   // ── Listen ─────────────────────────────────────────────

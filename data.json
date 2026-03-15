@@ -1,6 +1,7 @@
 {
   "releaseDate": "2026-09-26",
   "releaseDateLabel": "26 septembre 2026",
+  "contributors": [],
   "phases": [
     {
       "id": "prod",

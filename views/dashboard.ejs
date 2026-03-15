@@ -95,6 +95,34 @@
 
     <%- include('partials/_legend') %>
 
+    <!-- ══════════ CONTRIBUTORS MANAGEMENT ══════════ -->
+    <div x-show="phases.length > 0" class="mb-5" @click.stop>
+      <button @click="managingContributors = !managingContributors"
+              class="text-sm text-cod-muted hover:text-cod-accent transition flex items-center gap-1.5">
+        <span class="transition-transform duration-200" :class="managingContributors ? 'rotate-90' : ''" style="display:inline-block">▶</span>
+        Contributeurs
+        <template x-if="contributors.length > 0">
+          <span class="text-cod-muted" x-text="'(' + contributors.length + ')'"></span>
+        </template>
+      </button>
+      <div x-show="managingContributors" x-collapse class="mt-2 bg-cod-card rounded-lg border border-cod-border p-4">
+        <div class="flex flex-wrap gap-2 mb-3" x-show="contributors.length > 0">
+          <template x-for="name in contributors" :key="name">
+            <span class="inline-flex items-center gap-1.5 text-sm px-2.5 py-1 rounded-full bg-cod-blue/15 text-cod-blue border border-cod-blue/25">
+              <span x-text="name"></span>
+              <button @click="removeContributor(name)" class="hover:text-cod-red transition text-xs" title="Retirer">&times;</button>
+            </span>
+          </template>
+        </div>
+        <div class="flex gap-2 items-center">
+          <input type="text" x-model="newContributor" placeholder="Ajouter un contributeur..."
+                 @keydown.enter="addContributor()"
+                 class="flex-1 bg-cod-dark border border-cod-border rounded px-3 py-2 text-sm text-cod-text">
+          <button @click="addContributor()" class="text-sm text-cod-accent hover:underline" x-show="newContributor.trim()">Ajouter</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Phase cards -->
     <div class="space-y-4">
       <template x-for="phase in phases" :key="phase.id">

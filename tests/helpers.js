@@ -5,6 +5,7 @@ import { randomBytes } from 'crypto';
 import { createServer } from '../server.js';
 
 export const SEED_DATA = {
+  contributors: ['Alice', 'Bob'],
   phases: [
     { id: 'phase-1', name: 'Phase Alpha' },
     { id: 'phase-2', name: 'Phase Beta' },

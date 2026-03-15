@@ -52,6 +52,15 @@
                   x-text="'◆ ' + phaseOpenDecisions(phase.id)"></span>
           </template>
 
+          <!-- Phase contributors -->
+          <template x-if="phaseContributors(phase.id).length > 0">
+            <div class="shrink-0 flex items-center gap-1">
+              <template x-for="name in phaseContributors(phase.id)" :key="name">
+                <%- include('_contributor-badge') %>
+              </template>
+            </div>
+          </template>
+
           <div class="shrink-0 flex items-center gap-2 w-28">
             <div class="flex-1 h-2 bg-cod-dark rounded-full overflow-hidden">
               <div class="h-full rounded-full progress-bar"

@@ -10,6 +10,20 @@
             class="w-full bg-cod-dark border border-cod-border rounded px-3 py-2 text-sm text-cod-text resize-y"></textarea>
   <div class="flex items-center gap-2">
     <input type="date" x-model="newTask.deadlineDate" class="bg-cod-dark border border-cod-border rounded px-3 py-2 text-sm text-cod-text">
+    <template x-if="contributors.length > 0">
+      <div class="flex items-center gap-1.5 flex-wrap">
+        <span class="text-xs text-cod-muted">Qui :</span>
+        <template x-for="name in contributors" :key="name">
+          <button type="button" @click="toggleNewTaskContributor(name)"
+                  class="text-xs px-2 py-0.5 rounded-full border transition"
+                  :class="(newTask.contributors || []).includes(name)
+                    ? 'bg-cod-blue/15 text-cod-blue border-cod-blue/25'
+                    : 'text-cod-muted border-cod-border hover:border-cod-blue/40'">
+            <span x-text="name"></span>
+          </button>
+        </template>
+      </div>
+    </template>
     <div class="flex-1"></div>
     <button @click="createTask(phase.id)" class="text-cod-muted hover:text-cod-green p-2.5 rounded-full hover:bg-cod-green/10 transition-colors" title="Ajouter">
       <%- icon('check', 'lg') %>
@@ -21,7 +35,7 @@
 </div>
 
 <button x-show="addingTaskPhase !== phase.id"
-        @click.stop="cancelAllEditing(); addingTaskPhase = phase.id; newTask = { text: '', deadlineDate: '', notes: '', needsDecision: false }"
+        @click.stop="cancelAllEditing(); addingTaskPhase = phase.id; newTask = { text: '', deadlineDate: '', notes: '', needsDecision: false, contributors: [] }"
         class="text-sm text-cod-muted hover:text-cod-accent mt-2 transition block w-full text-left px-3 py-2">
   + Ajouter une tâche
 </button>

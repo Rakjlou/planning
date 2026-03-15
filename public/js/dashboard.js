@@ -8,6 +8,7 @@ function dashboard() {
     phases: [],
     tasks: [],
     decisionLog: [],
+    contributors: [],
 
     // ── UI-only state ─────────────────────────────────────
 
@@ -22,9 +23,11 @@ function dashboard() {
     editingTask: null,
     editTaskData: {},
     confirmingDelete: null,
-    newTask: { text: '', deadlineDate: '', notes: '', needsDecision: false },
+    newTask: { text: '', deadlineDate: '', notes: '', needsDecision: false, contributors: [] },
 
     newLogEntry: '',
+    newContributor: '',
+    managingContributors: false,
 
     // ── Shared constants ────────────────────────────────────
 
@@ -42,6 +45,7 @@ function dashboard() {
       this.addingTaskPhase = null;
       this.creatingPhase = false;
       this.confirmingDelete = null;
+      this.managingContributors = false;
     },
 
     // ── Computed ──────────────────────────────────────────
@@ -85,6 +89,7 @@ function dashboard() {
       this.phases = data.phases;
       this.tasks = data.tasks;
       this.decisionLog = data.decisionLog;
+      this.contributors = data.contributors || [];
       this.rebuildNextTaskCache();
     },
 
@@ -169,13 +174,13 @@ function dashboard() {
       const task = await this.api('POST', 'tasks', payload);
       this.tasks.push(task);
       this.addingTaskPhase = null;
-      this.newTask = { text: '', deadlineDate: '', notes: '', needsDecision: false };
+      this.newTask = { text: '', deadlineDate: '', notes: '', needsDecision: false, contributors: [] };
       this.rebuildNextTaskCache();
     },
 
     async saveTask(id) {
-      const { text, deadlineDate, notes, decisions } = this.editTaskData;
-      const payload = { text, deadlineDate, notes, decisions: decisions || [] };
+      const { text, deadlineDate, notes, decisions, contributors } = this.editTaskData;
+      const payload = { text, deadlineDate, notes, decisions: decisions || [], contributors: contributors || [] };
       const updated = await this.api('PUT', `tasks/${id}`, payload);
       const idx = this.tasks.findIndex(t => t.id === id);
       if (idx >= 0) this.tasks[idx] = updated;
@@ -220,6 +225,49 @@ function dashboard() {
       const entry = await this.api('POST', 'decision-log', { text: this.newLogEntry.trim() });
       this.decisionLog.push(entry);
       this.newLogEntry = '';
+    },
+
+    // ── Contributors ────────────────────────────────────
+
+    phaseContributors(phaseId) {
+      const names = new Set();
+      for (const t of this.tasks) {
+        if (t.phase === phaseId) {
+          for (const c of (t.contributors || [])) names.add(c);
+        }
+      }
+      return [...names].sort();
+    },
+
+    async toggleContributor(task, name) {
+      if (!task.contributors) task.contributors = [];
+      const idx = task.contributors.indexOf(name);
+      if (idx >= 0) task.contributors.splice(idx, 1);
+      else task.contributors.push(name);
+      await this.api('PUT', `tasks/${task.id}`, { contributors: task.contributors });
+    },
+
+    toggleNewTaskContributor(name) {
+      if (!this.newTask.contributors) this.newTask.contributors = [];
+      const idx = this.newTask.contributors.indexOf(name);
+      if (idx >= 0) this.newTask.contributors.splice(idx, 1);
+      else this.newTask.contributors.push(name);
+    },
+
+    async addContributor() {
+      const name = this.newContributor.trim();
+      if (!name) return;
+      await this.api('POST', 'contributors', { name });
+      this.contributors.push(name);
+      this.newContributor = '';
+    },
+
+    async removeContributor(name) {
+      await this.api('DELETE', `contributors/${encodeURIComponent(name)}`);
+      this.contributors = this.contributors.filter(c => c !== name);
+      for (const t of this.tasks) {
+        if (t.contributors) t.contributors = t.contributors.filter(c => c !== name);
+      }
     },
 
     // ── Phase display helpers ────────────────────────────
