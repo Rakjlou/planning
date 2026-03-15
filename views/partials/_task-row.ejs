@@ -60,7 +60,7 @@
                         'bg-cod-green/15 text-cod-green border-cod-green/30': dec.status === 'decided'
                       }">
                 <span x-text="decisionIcon(dec.status)"></span>
-                <span x-text="dec.status === 'open' ? 'Ouvert' : dec.status === 'discussed' ? 'Discuté' : 'Décidé'"></span>
+                <span x-text="decisionLabel(dec.status)"></span>
               </button>
               <input type="text" x-model="editTaskData.decisions[di].notes" placeholder="Notes décision"
                      class="flex-1 text-xs bg-transparent border-b border-cod-border/60 outline-none py-0.5 text-cod-muted focus:border-cod-accent/40 transition-colors">

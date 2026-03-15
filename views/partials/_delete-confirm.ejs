@@ -5,8 +5,8 @@
        confirmTitle — title for confirm button (default "Confirmer")
        size         — icon size: 'sm' or 'md' (default 'sm')
 %>
-<% const _size = typeof size !== 'undefined' ? size : 'sm'; %>
-<% const _confirmTitle = typeof confirmTitle !== 'undefined' ? confirmTitle : 'Confirmer'; %>
+<% const _size = locals.size || 'sm'; %>
+<% const _confirmTitle = locals.confirmTitle || 'Confirmer'; %>
 <template x-if="confirmingDelete !== <%= deleteKey %>">
   <button @click="confirmingDelete = <%= deleteKey %>"
           class="text-cod-muted hover:text-cod-red p-1 rounded-full hover:bg-cod-red/10 transition-colors" title="Supprimer">

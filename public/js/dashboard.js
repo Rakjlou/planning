@@ -195,7 +195,11 @@ function dashboard() {
     // ── Decision helpers ─────────────────────────────────
 
     decisionIcon(status) {
-      return { open: '\u25C7', discussed: '\u25C8', decided: '\u25C6' }[status] || '\u25C7';
+      return (this.decisionStatuses.find(s => s.v === status) || this.decisionStatuses[0]).i;
+    },
+
+    decisionLabel(status) {
+      return (this.decisionStatuses.find(s => s.v === status) || this.decisionStatuses[0]).l;
     },
 
     phaseOpenDecisions(phaseId) {
