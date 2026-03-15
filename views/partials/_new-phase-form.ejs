@@ -4,7 +4,9 @@
   <div class="flex gap-3 items-end">
     <div class="flex-1">
       <label class="text-xs text-cod-muted block mb-1">Nom</label>
-      <input type="text" x-model="newPhase.name" placeholder="ex: 1 — Production" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1.5 text-sm text-cod-text">
+      <input type="text" x-model="newPhase.name" placeholder="ex: 1 — Production"
+             @keydown.enter="if (newPhase.name.trim()) createPhase()"
+             class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1.5 text-sm text-cod-text">
     </div>
     <button @click="createPhase()" class="text-cod-muted hover:text-cod-green p-1.5 rounded-full hover:bg-cod-green/10 transition-colors" title="Créer">
       <%- icon('check', 'lg') %>

@@ -14,6 +14,7 @@
         <!-- Name: span or input -->
         <div x-show="editingPhase !== phase.id" class="text-sm font-semibold text-white" x-text="phase.name"></div>
         <input x-show="editingPhase === phase.id" type="text" x-model="editPhaseData.name" @click.stop
+               @keydown.enter="savePhase(phase.id)"
                class="text-sm font-semibold bg-transparent border-b border-cod-accent/40 outline-none w-full py-0.5 text-white focus:border-cod-accent transition-colors">
         <!-- Period: computed from task dates -->
         <div class="text-xs text-cod-muted" x-text="phasePeriod(phase.id)"></div>

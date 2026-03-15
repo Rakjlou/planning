@@ -247,6 +247,98 @@ describe('Exclusivité mutuelle', () => {
   });
 });
 
+// ── Enter sauvegarde ────────────────────────────────────
+
+describe('Enter sauvegarde les phases et tâches', () => {
+  before(setup);
+  after(teardown);
+
+  it('édition phase → Enter → sauvegarde et retour en lecture', async () => {
+    await card(0).getByTitle('Modifier').click();
+    const inp = card(0).locator('input[x-model="editPhaseData.name"]');
+    await inp.waitFor({ state: 'visible', timeout: TIMEOUT });
+    await inp.fill('Phase Alpha Enter');
+    await inp.press('Enter');
+    await inp.waitFor({ state: 'hidden', timeout: TIMEOUT });
+    const name = await card(0).locator('div.font-semibold.text-white').textContent();
+    assert.ok(name.includes('Phase Alpha Enter'));
+  });
+
+  it('édition phase → Enter → persisté après reload', async () => {
+    await page.reload();
+    await page.waitForFunction(() => {
+      const names = document.querySelectorAll('.space-y-3 .font-semibold.text-white');
+      return names.length >= 2;
+    }, { timeout: TIMEOUT });
+    const names = await page.locator('.space-y-3 .font-semibold.text-white').allTextContents();
+    assert.ok(names.some(n => n.includes('Phase Alpha Enter')));
+  });
+
+  it('édition tâche (champ texte) → Enter → sauvegarde et retour en lecture', async () => {
+    await card(0).locator('.cursor-pointer.select-none').click();
+    const row = card(0).locator('.task-row').first();
+    await row.waitFor({ state: 'visible', timeout: TIMEOUT });
+    await row.click();
+    const inp = row.locator('input[x-model="editTaskData.text"]');
+    await inp.waitFor({ state: 'visible', timeout: TIMEOUT });
+    await inp.fill('Tâche Enter texte');
+    await inp.press('Enter');
+    await inp.waitFor({ state: 'hidden', timeout: TIMEOUT });
+    const texts = await card(0).locator('.task-row').allTextContents();
+    assert.ok(texts.some(t => t.includes('Tâche Enter texte')));
+  });
+
+  it('édition tâche (champ notes) → Enter → sauvegarde et retour en lecture', async () => {
+    const row = card(0).locator('.task-row').first();
+    await row.click();
+    const inp = row.locator('input[x-model="editTaskData.notes"]');
+    await inp.waitFor({ state: 'visible', timeout: TIMEOUT });
+    await inp.fill('Note via Enter');
+    await inp.press('Enter');
+    await inp.waitFor({ state: 'hidden', timeout: TIMEOUT });
+
+    // Re-open to verify the note was saved
+    await row.click();
+    const val = await row.locator('input[x-model="editTaskData.notes"]').inputValue();
+    assert.equal(val, 'Note via Enter');
+    await page.keyboard.press('Escape');
+  });
+
+  it('création phase → Enter → phase créée', async () => {
+    const countBefore = await page.locator('.space-y-3 > div').count();
+    await page.locator('button:visible', { hasText: '+ Nouvelle phase' }).click();
+    const inp = page.locator('input[placeholder="ex: 1 — Production"]');
+    await inp.fill('Phase Enter');
+    await inp.press('Enter');
+
+    await page.waitForFunction((before) => {
+      return document.querySelectorAll('.space-y-3 > div').length > before;
+    }, countBefore, { timeout: TIMEOUT });
+    const names = await page.locator('.space-y-3 .font-semibold.text-white').allTextContents();
+    assert.ok(names.some(n => n.includes('Phase Enter')));
+  });
+
+  it('ajout tâche (champ notes) → Enter → tâche créée', async () => {
+    await card(0).locator('.cursor-pointer.select-none').click();
+    await card(0).locator('.task-row').first().waitFor({ state: 'visible', timeout: TIMEOUT });
+    const countBefore = await card(0).locator('.task-row').count();
+
+    await card(0).getByText('+ Ajouter une tâche').click();
+    await card(0).locator('input[placeholder="Description de la tâche"]').fill('Tâche ajoutée via Enter notes');
+    const notesInp = card(0).locator('input[placeholder="Notes (optionnel)"]');
+    await notesInp.fill('Note test');
+    await notesInp.press('Enter');
+
+    await page.waitForFunction((args) => {
+      const cards = document.querySelectorAll('.space-y-3 > div');
+      if (!cards[0]) return false;
+      return cards[0].querySelectorAll('.task-row').length > args;
+    }, countBefore, { timeout: TIMEOUT });
+    const texts = await card(0).locator('.task-row').allTextContents();
+    assert.ok(texts.some(t => t.includes('Tâche ajoutée via Enter notes')));
+  });
+});
+
 // ── Ajout de tâche ──────────────────────────────────────
 
 describe('Ajout de tâche', () => {

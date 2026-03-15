@@ -17,12 +17,14 @@
     <div class="flex items-center gap-2">
       <span x-show="editingTask !== task.id" class="text-sm" :class="task.done ? 'line-through' : ''" x-text="task.text"></span>
       <input x-show="editingTask === task.id" type="text" x-model="editTaskData.text" @click.stop
+             @keydown.enter="saveTask(task.id)"
              class="text-sm bg-transparent border-b border-cod-accent/40 outline-none w-full py-0.5 text-cod-text focus:border-cod-accent transition-colors">
     </div>
 
     <!-- Notes: span in read mode, input in edit mode -->
     <div x-show="editingTask !== task.id && task.notes && !task.done" class="text-xs text-cod-muted mt-0.5" x-text="task.notes"></div>
     <input x-show="editingTask === task.id" type="text" x-model="editTaskData.notes" placeholder="Notes" @click.stop
+           @keydown.enter="saveTask(task.id)"
            class="text-xs bg-transparent border-b border-cod-border/60 outline-none w-full py-0.5 mt-0.5 text-cod-muted focus:border-cod-accent/40 transition-colors">
 
     <!-- Decision pills: read mode -->
@@ -63,6 +65,7 @@
                 <span x-text="decisionLabel(dec.status)"></span>
               </button>
               <input type="text" x-model="editTaskData.decisions[di].notes" placeholder="Notes décision"
+                     @keydown.enter="saveTask(task.id)"
                      class="flex-1 text-xs bg-transparent border-b border-cod-border/60 outline-none py-0.5 text-cod-muted focus:border-cod-accent/40 transition-colors">
               <button @click="editTaskData.decisions.splice(di, 1)"
                       class="text-cod-muted hover:text-cod-red text-xs px-1" title="Supprimer la décision">✕</button>
