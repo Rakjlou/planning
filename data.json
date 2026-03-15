@@ -66,17 +66,8 @@
       "deadlineDate": "2026-04-18",
       "notes": "Confortable. Priorité haute mais pas de panique.",
       "key": false,
-      "done": false
-    },
-    {
-      "id": "p1-2",
-      "phase": "prod",
-      "text": "Choisir un ingé mastering",
-      "deadline": "4 avril",
-      "deadlineDate": "2026-04-04",
-      "notes": "Comparer, devis, écouter des références.",
-      "key": false,
-      "done": false
+      "done": false,
+      "decisions": []
     },
     {
       "id": "p1-3",
@@ -106,7 +97,17 @@
       "deadlineDate": "2026-05-30",
       "notes": "",
       "key": false,
-      "done": false
+      "done": false,
+      "decisions": [
+        {
+          "status": "open",
+          "notes": "AAA"
+        },
+        {
+          "status": "open",
+          "notes": "BBB"
+        }
+      ]
     },
     {
       "id": "p1-6",
@@ -176,7 +177,13 @@
       "deadlineDate": "2026-07-18",
       "notes": "Tournage mai-juin, montage juin-juillet.",
       "key": true,
-      "done": false
+      "done": false,
+      "decisions": [
+        {
+          "status": "discussed",
+          "notes": ""
+        }
+      ]
     },
     {
       "id": "p2-7",
@@ -196,7 +203,13 @@
       "deadlineDate": "2026-05-31",
       "notes": "",
       "key": false,
-      "done": false
+      "done": false,
+      "decisions": [
+        {
+          "status": "open",
+          "notes": ""
+        }
+      ]
     },
     {
       "id": "p3-2",
@@ -266,7 +279,13 @@
       "deadlineDate": "2026-05-31",
       "notes": "Tester les réactions en live.",
       "key": false,
-      "done": false
+      "done": false,
+      "decisions": [
+        {
+          "status": "open",
+          "notes": ""
+        }
+      ]
     },
     {
       "id": "p4-2",
@@ -389,6 +408,22 @@
       "done": false
     },
     {
+      "id": "p5-7",
+      "phase": "press",
+      "text": "Attaché de presse : on en prend un ? Lequel ?",
+      "deadline": "mai-juin",
+      "deadlineDate": "2026-06-15",
+      "notes": "Couvre ou non la phase 5 (presse & promo).",
+      "key": false,
+      "done": false,
+      "decisions": [
+        {
+          "status": "open",
+          "notes": ""
+        }
+      ]
+    },
+    {
       "id": "p6-1",
       "phase": "physical",
       "text": "Choisir presseur CD",
@@ -434,9 +469,15 @@
       "text": "Pressage vinyle (100 ex.)",
       "deadline": "Commander en juin",
       "deadlineDate": "2026-06-30",
-      "notes": "Délai ~12-16 sem. 100vinyl.com ou Vinyl de Paris.",
+      "notes": "Délai ~12-16 sem. 100vinyl.com ou Vinyl de Paris. Budget à évaluer — commande en juin.",
       "key": true,
-      "done": false
+      "done": false,
+      "decisions": [
+        {
+          "status": "open",
+          "notes": ""
+        }
+      ]
     },
     {
       "id": "p6-6",
@@ -536,7 +577,13 @@
       "deadlineDate": "2026-09-26",
       "notes": "Septembre = reprise saison, salles dispo.",
       "key": true,
-      "done": false
+      "done": false,
+      "decisions": [
+        {
+          "status": "open",
+          "notes": ""
+        }
+      ]
     },
     {
       "id": "p7-8",
@@ -632,10 +679,9 @@
       "id": "p9-1",
       "phase": "release",
       "text": "🎯 SORTIE ALBUM",
-      "deadline": "26 septembre",
       "deadlineDate": "2026-09-26",
       "notes": "",
-      "key": true,
+      "isReleaseDate": true,
       "done": false
     },
     {
@@ -707,71 +753,16 @@
       "notes": "",
       "key": false,
       "done": false
-    }
-  ],
-  "decisions": [
-    {
-      "id": "d1",
-      "label": "Choix des singles",
-      "impact": "Priorisation du mastering",
-      "urgency": "haute",
-      "deadline": "Dès que le mix avance",
-      "status": "open",
-      "notes": ""
     },
     {
-      "id": "d2",
-      "label": "Budget mastering",
-      "impact": "Choix de l'ingé",
-      "urgency": "moyenne",
-      "deadline": "Avril",
-      "status": "open",
-      "notes": ""
-    },
-    {
-      "id": "d3",
-      "label": "Distributeur digital",
-      "impact": "Mise en place du pipeline",
-      "urgency": "moyenne",
-      "deadline": "Mai",
-      "status": "open",
-      "notes": ""
-    },
-    {
-      "id": "d4",
-      "label": "Attaché de presse : on en prend un ? Lequel ?",
-      "impact": "Campagne presse (couvre ou non la phase 5)",
-      "urgency": "moyenne",
-      "deadline": "Mai-juin",
-      "status": "open",
-      "notes": ""
-    },
-    {
-      "id": "d5",
-      "label": "Clip ou pas ? (et budget)",
-      "impact": "Planning visuel",
-      "urgency": "basse",
-      "deadline": "Avril-mai",
-      "status": "open",
-      "notes": ""
-    },
-    {
-      "id": "d6",
-      "label": "Release show : on vise ?",
-      "impact": "Booking à lancer",
-      "urgency": "basse",
-      "deadline": "Juin",
-      "status": "open",
-      "notes": ""
-    },
-    {
-      "id": "d7",
-      "label": "Vinyle : on presse ou pas ?",
-      "impact": "Budget + délai de commande en juin",
-      "urgency": "basse",
-      "deadline": "Mai",
-      "status": "open",
-      "notes": ""
+      "id": "t-1",
+      "phase": "prod",
+      "text": "AA",
+      "deadlineDate": "2026-04-17",
+      "notes": "",
+      "isReleaseDate": false,
+      "done": false,
+      "decisions": []
     }
   ],
   "decisionLog": [

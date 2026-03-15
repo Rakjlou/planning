@@ -10,11 +10,8 @@ const PORT = process.env.PORT || 3000;
 // ── Empty database template ──────────────────────────────
 
 const EMPTY_DATA = {
-  releaseDate: '',
-  releaseDateLabel: '',
   phases: [],
   tasks: [],
-  decisions: [],
   decisionLog: [],
 };
 
@@ -70,16 +67,6 @@ app.get('/api/data', async (_req, res) => {
   res.json(await readData());
 });
 
-// ── Settings ─────────────────────────────────────────────
-
-app.put('/api/settings', async (req, res) => {
-  await mutate(data => {
-    if (req.body.releaseDate !== undefined) data.releaseDate = req.body.releaseDate;
-    if (req.body.releaseDateLabel !== undefined) data.releaseDateLabel = req.body.releaseDateLabel;
-  });
-  res.json({ ok: true });
-});
-
 // ── Phases CRUD ──────────────────────────────────────────
 
 app.post('/api/phases', async (req, res) => {
@@ -118,74 +105,51 @@ app.delete('/api/phases/:id', async (req, res) => {
 // ── Tasks CRUD ───────────────────────────────────────────
 
 app.post('/api/tasks', async (req, res) => {
-  const task = await mutate(data => {
-    const task = {
-      id: nextId(data.tasks, 't-'),
-      phase: req.body.phase || '',
-      text: req.body.text || '',
-      deadline: req.body.deadline || '',
-      deadlineDate: req.body.deadlineDate || '',
-      notes: req.body.notes || '',
-      key: req.body.key || false,
-      done: false,
-    };
-    data.tasks.push(task);
-    return task;
-  });
-  res.status(201).json(task);
+  try {
+    const task = await mutate(data => {
+      if (req.body.isReleaseDate && data.tasks.some(t => t.isReleaseDate)) {
+        throw new Error('Une tâche est déjà marquée comme date de sortie');
+      }
+      const task = {
+        id: nextId(data.tasks, 't-'),
+        phase: req.body.phase || '',
+        text: req.body.text || '',
+        deadlineDate: req.body.deadlineDate || '',
+        notes: req.body.notes || '',
+        isReleaseDate: req.body.isReleaseDate || false,
+        done: false,
+        decisions: req.body.decisions || [],
+      };
+      data.tasks.push(task);
+      return task;
+    });
+    res.status(201).json(task);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 app.put('/api/tasks/:id', async (req, res) => {
-  const updated = await mutate(data => {
-    const task = data.tasks.find(t => t.id === req.params.id);
-    if (!task) return null;
-    Object.assign(task, req.body, { id: task.id });
-    return task;
-  });
-  if (!updated) return res.status(404).json({ error: 'Task not found' });
-  res.json(updated);
+  try {
+    const updated = await mutate(data => {
+      const task = data.tasks.find(t => t.id === req.params.id);
+      if (!task) return null;
+      if (req.body.isReleaseDate && !task.isReleaseDate && data.tasks.some(t => t.isReleaseDate)) {
+        throw new Error('Une tâche est déjà marquée comme date de sortie');
+      }
+      Object.assign(task, req.body, { id: task.id });
+      return task;
+    });
+    if (!updated) return res.status(404).json({ error: 'Task not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 app.delete('/api/tasks/:id', async (req, res) => {
   await mutate(data => {
     data.tasks = data.tasks.filter(t => t.id !== req.params.id);
-  });
-  res.json({ ok: true });
-});
-
-// ── Decisions CRUD ───────────────────────────────────────
-
-app.post('/api/decisions', async (req, res) => {
-  const decision = await mutate(data => {
-    const decision = {
-      id: nextId(data.decisions, 'd-'),
-      label: req.body.label || '',
-      impact: req.body.impact || '',
-      urgency: req.body.urgency || 'moyenne',
-      deadline: req.body.deadline || '',
-      status: 'open',
-      notes: '',
-    };
-    data.decisions.push(decision);
-    return decision;
-  });
-  res.status(201).json(decision);
-});
-
-app.put('/api/decisions/:id', async (req, res) => {
-  const updated = await mutate(data => {
-    const d = data.decisions.find(d => d.id === req.params.id);
-    if (!d) return null;
-    Object.assign(d, req.body, { id: d.id });
-    return d;
-  });
-  if (!updated) return res.status(404).json({ error: 'Decision not found' });
-  res.json(updated);
-});
-
-app.delete('/api/decisions/:id', async (req, res) => {
-  await mutate(data => {
-    data.decisions = data.decisions.filter(d => d.id !== req.params.id);
   });
   res.json({ ok: true });
 });
