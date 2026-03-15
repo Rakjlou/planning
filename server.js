@@ -15,37 +15,6 @@ const EMPTY_DATA = {
   decisionLog: [],
 };
 
-// ── JSON read/write with sequential write queue ──────────
-
-async function readData() {
-  try {
-    return JSON.parse(await readFile(DATA_FILE, 'utf-8'));
-  } catch (err) {
-    if (err.code !== 'ENOENT') throw err;
-    await writeFile(DATA_FILE, JSON.stringify(EMPTY_DATA, null, 2));
-    return structuredClone(EMPTY_DATA);
-  }
-}
-
-let writeQueue = Promise.resolve();
-
-function enqueueWrite(fn) {
-  writeQueue = writeQueue.then(fn).catch(err => {
-    console.error('Write error:', err);
-    throw err;
-  });
-  return writeQueue;
-}
-
-async function mutate(transformFn) {
-  return enqueueWrite(async () => {
-    const data = await readData();
-    const result = transformFn(data);
-    await writeFile(DATA_FILE, JSON.stringify(data, null, 2));
-    return result;
-  });
-}
-
 // ── ID generation ────────────────────────────────────────
 
 function nextId(collection, prefix) {
@@ -55,121 +24,171 @@ function nextId(collection, prefix) {
   return prefix + (nums.length ? Math.max(...nums) + 1 : 1);
 }
 
-// ── Express app ──────────────────────────────────────────
+// ── Server factory ───────────────────────────────────────
 
-const app = express();
-app.use(express.json());
-app.use(express.static(join(__dirname, 'public')));
+export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
 
-// ── GET all data ─────────────────────────────────────────
+  // ── JSON read/write with sequential write queue ──────
 
-app.get('/api/data', async (_req, res) => {
-  res.json(await readData());
-});
+  async function readData() {
+    try {
+      return JSON.parse(await readFile(dataFile, 'utf-8'));
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err;
+      await writeFile(dataFile, JSON.stringify(EMPTY_DATA, null, 2));
+      return structuredClone(EMPTY_DATA);
+    }
+  }
 
-// ── Phases CRUD ──────────────────────────────────────────
+  let writeQueue = Promise.resolve();
 
-app.post('/api/phases', async (req, res) => {
-  const phase = await mutate(data => {
-    const phase = {
-      id: nextId(data.phases, 'phase-'),
-      name: req.body.name || '',
-      period: req.body.period || '',
-      milestones: req.body.milestones || '',
-    };
-    data.phases.push(phase);
-    return phase;
+  function enqueueWrite(fn) {
+    writeQueue = writeQueue.then(fn).catch(err => {
+      console.error('Write error:', err);
+      throw err;
+    });
+    return writeQueue;
+  }
+
+  async function mutate(transformFn) {
+    return enqueueWrite(async () => {
+      const data = await readData();
+      const result = transformFn(data);
+      await writeFile(dataFile, JSON.stringify(data, null, 2));
+      return result;
+    });
+  }
+
+  // ── Express app ────────────────────────────────────────
+
+  const app = express();
+  app.use(express.json());
+  app.use(express.static(join(__dirname, 'public')));
+
+  // ── GET all data ───────────────────────────────────────
+
+  app.get('/api/data', async (_req, res) => {
+    res.json(await readData());
   });
-  res.status(201).json(phase);
-});
 
-app.put('/api/phases/:id', async (req, res) => {
-  const updated = await mutate(data => {
-    const phase = data.phases.find(p => p.id === req.params.id);
-    if (!phase) return null;
-    Object.assign(phase, req.body, { id: phase.id });
-    return phase;
-  });
-  if (!updated) return res.status(404).json({ error: 'Phase not found' });
-  res.json(updated);
-});
+  // ── Phases CRUD ────────────────────────────────────────
 
-app.delete('/api/phases/:id', async (req, res) => {
-  await mutate(data => {
-    data.phases = data.phases.filter(p => p.id !== req.params.id);
-    data.tasks = data.tasks.filter(t => t.phase !== req.params.id);
-  });
-  res.json({ ok: true });
-});
-
-// ── Tasks CRUD ───────────────────────────────────────────
-
-app.post('/api/tasks', async (req, res) => {
-  try {
-    const task = await mutate(data => {
-      if (req.body.isReleaseDate && data.tasks.some(t => t.isReleaseDate)) {
-        throw new Error('Une tâche est déjà marquée comme date de sortie');
-      }
-      const task = {
-        id: nextId(data.tasks, 't-'),
-        phase: req.body.phase || '',
-        text: req.body.text || '',
-        deadlineDate: req.body.deadlineDate || '',
-        notes: req.body.notes || '',
-        isReleaseDate: req.body.isReleaseDate || false,
-        done: false,
-        decisions: req.body.decisions || [],
+  app.post('/api/phases', async (req, res) => {
+    const phase = await mutate(data => {
+      const phase = {
+        id: nextId(data.phases, 'phase-'),
+        name: req.body.name || '',
+        period: req.body.period || '',
+        milestones: req.body.milestones || '',
       };
-      data.tasks.push(task);
-      return task;
+      data.phases.push(phase);
+      return phase;
     });
-    res.status(201).json(task);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
+    res.status(201).json(phase);
+  });
 
-app.put('/api/tasks/:id', async (req, res) => {
-  try {
+  app.put('/api/phases/:id', async (req, res) => {
     const updated = await mutate(data => {
-      const task = data.tasks.find(t => t.id === req.params.id);
-      if (!task) return null;
-      if (req.body.isReleaseDate && !task.isReleaseDate && data.tasks.some(t => t.isReleaseDate)) {
-        throw new Error('Une tâche est déjà marquée comme date de sortie');
-      }
-      Object.assign(task, req.body, { id: task.id });
-      return task;
+      const phase = data.phases.find(p => p.id === req.params.id);
+      if (!phase) return null;
+      Object.assign(phase, req.body, { id: phase.id });
+      return phase;
     });
-    if (!updated) return res.status(404).json({ error: 'Task not found' });
+    if (!updated) return res.status(404).json({ error: 'Phase not found' });
     res.json(updated);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.delete('/api/tasks/:id', async (req, res) => {
-  await mutate(data => {
-    data.tasks = data.tasks.filter(t => t.id !== req.params.id);
   });
-  res.json({ ok: true });
-});
 
-// ── Decision log (append-only) ───────────────────────────
-
-app.post('/api/decision-log', async (req, res) => {
-  const entry = await mutate(data => {
-    const entry = {
-      date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
-      text: req.body.text || '',
-    };
-    data.decisionLog.push(entry);
-    return entry;
+  app.delete('/api/phases/:id', async (req, res) => {
+    await mutate(data => {
+      data.phases = data.phases.filter(p => p.id !== req.params.id);
+      data.tasks = data.tasks.filter(t => t.phase !== req.params.id);
+    });
+    res.json({ ok: true });
   });
-  res.status(201).json(entry);
-});
 
-// ── Start ────────────────────────────────────────────────
+  // ── Tasks CRUD ─────────────────────────────────────────
 
-app.listen(PORT, () => {
-  console.log(`Retroplanning server → http://localhost:${PORT}`);
-});
+  app.post('/api/tasks', async (req, res) => {
+    try {
+      const task = await mutate(data => {
+        if (req.body.isReleaseDate && data.tasks.some(t => t.isReleaseDate)) {
+          throw new Error('Une tâche est déjà marquée comme date de sortie');
+        }
+        const task = {
+          id: nextId(data.tasks, 't-'),
+          phase: req.body.phase || '',
+          text: req.body.text || '',
+          deadlineDate: req.body.deadlineDate || '',
+          notes: req.body.notes || '',
+          isReleaseDate: req.body.isReleaseDate || false,
+          done: false,
+          decisions: req.body.decisions || [],
+        };
+        data.tasks.push(task);
+        return task;
+      });
+      res.status(201).json(task);
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.put('/api/tasks/:id', async (req, res) => {
+    try {
+      const updated = await mutate(data => {
+        const task = data.tasks.find(t => t.id === req.params.id);
+        if (!task) return null;
+        if (req.body.isReleaseDate && !task.isReleaseDate && data.tasks.some(t => t.isReleaseDate)) {
+          throw new Error('Une tâche est déjà marquée comme date de sortie');
+        }
+        Object.assign(task, req.body, { id: task.id });
+        return task;
+      });
+      if (!updated) return res.status(404).json({ error: 'Task not found' });
+      res.json(updated);
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.delete('/api/tasks/:id', async (req, res) => {
+    await mutate(data => {
+      data.tasks = data.tasks.filter(t => t.id !== req.params.id);
+    });
+    res.json({ ok: true });
+  });
+
+  // ── Decision log (append-only) ─────────────────────────
+
+  app.post('/api/decision-log', async (req, res) => {
+    const entry = await mutate(data => {
+      const entry = {
+        date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
+        text: req.body.text || '',
+      };
+      data.decisionLog.push(entry);
+      return entry;
+    });
+    res.status(201).json(entry);
+  });
+
+  // ── Listen ─────────────────────────────────────────────
+
+  const server = app.listen(port, () => {
+    const addr = server.address();
+    console.log(`Retroplanning server → http://localhost:${addr.port}`);
+  });
+
+  return {
+    server,
+    app,
+    port: () => server.address().port,
+    close: () => new Promise(resolve => server.close(resolve)),
+  };
+}
+
+// ── Direct execution ─────────────────────────────────────
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  createServer();
+}
