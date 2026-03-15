@@ -83,8 +83,9 @@ export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
     return `<svg class="${ICON_SIZES[size]}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${ICON_PATHS[name]}"/></svg>`;
   }
 
-  app.get('/', (_req, res) => {
-    res.render('dashboard', { icon });
+  app.get('/', async (_req, res) => {
+    const data = await readData();
+    res.render('dashboard', { icon, initialData: JSON.stringify(data) });
   });
 
   // ── GET all data ───────────────────────────────────────

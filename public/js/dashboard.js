@@ -83,9 +83,8 @@ function dashboard() {
 
     // ── Data loading ─────────────────────────────────────
 
-    async loadData() {
-      const res = await fetch('/api/data');
-      const data = await res.json();
+    loadData() {
+      const data = window.__INITIAL_DATA__ || { phases: [], tasks: [], decisionLog: [], contributors: [] };
       this.phases = data.phases;
       this.tasks = data.tasks;
       this.decisionLog = data.decisionLog;
@@ -179,8 +178,8 @@ function dashboard() {
     },
 
     async saveTask(id) {
-      const { text, deadlineDate, notes, decisions, contributors } = this.editTaskData;
-      const payload = { text, deadlineDate, notes, decisions: decisions || [], contributors: contributors || [] };
+      const { text, deadlineDate, notes, decisions } = this.editTaskData;
+      const payload = { text, deadlineDate, notes, decisions: decisions || [] };
       const updated = await this.api('PUT', `tasks/${id}`, payload);
       const idx = this.tasks.findIndex(t => t.id === id);
       if (idx >= 0) this.tasks[idx] = updated;
