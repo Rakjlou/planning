@@ -3,23 +3,23 @@
        deleteKey    — Alpine expression for confirmingDelete match (e.g. "'phase-' + phase.id")
        deleteAction — Alpine expression on confirm (e.g. "deletePhase(phase.id)")
        confirmTitle — title for confirm button (default "Confirmer")
-       size         — icon size: 'sm' or 'md' (default 'sm')
+       size         — icon size: 'sm', 'md' or 'lg' (default 'md')
 %>
-<% const _size = locals.size || 'sm'; %>
+<% const _size = locals.size || 'md'; %>
 <% const _confirmTitle = locals.confirmTitle || 'Confirmer'; %>
 <template x-if="confirmingDelete !== <%= deleteKey %>">
   <button @click="confirmingDelete = <%= deleteKey %>"
-          class="text-cod-muted hover:text-cod-red p-1 rounded-full hover:bg-cod-red/10 transition-colors" title="Supprimer">
+          class="text-cod-muted hover:text-cod-red p-2 rounded-full hover:bg-cod-red/10 transition-colors" title="Supprimer">
     <%- icon('delete', _size) %>
   </button>
 </template>
 <template x-if="confirmingDelete === <%= deleteKey %>">
-  <div class="flex items-center gap-0.5 text-xs">
+  <div class="flex items-center gap-1 text-sm">
     <span class="text-cod-red font-medium">Sûr ?</span>
-    <button @click="<%= deleteAction %>" class="text-cod-red hover:text-red-400 p-1 rounded-full hover:bg-cod-red/10 transition-colors" title="<%= _confirmTitle %>">
+    <button @click="<%= deleteAction %>" class="text-cod-red hover:text-red-400 p-2 rounded-full hover:bg-cod-red/10 transition-colors" title="<%= _confirmTitle %>">
       <%- icon('check', _size) %>
     </button>
-    <button @click="confirmingDelete = null" class="text-cod-muted hover:text-white p-1 rounded-full hover:bg-cod-border/50 transition-colors" title="Annuler">
+    <button @click="confirmingDelete = null" class="text-cod-muted hover:text-white p-2 rounded-full hover:bg-cod-border/50 transition-colors" title="Annuler">
       <%- icon('cancel', _size) %>
     </button>
   </div>

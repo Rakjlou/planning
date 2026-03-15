@@ -3,21 +3,21 @@
      :class="phaseUrgencyGlow(phase.id)" @click.stop>
 
   <!-- Phase header row -->
-  <div class="px-4 py-3 cursor-pointer select-none flex items-center gap-2 transition"
+  <div class="px-5 py-4 cursor-pointer select-none flex items-center gap-2 transition"
        :class="editingPhase === phase.id ? 'bg-cod-accent/5' : ''"
        @click="if (editingPhase !== phase.id) togglePhase(phase.id)">
     <div class="flex items-center gap-4 flex-1 min-w-0">
-      <span class="text-cod-muted text-xs transition-transform duration-200"
+      <span class="text-cod-muted text-sm transition-transform duration-200"
             :class="openPhases.includes(phase.id) ? 'rotate-90' : ''" style="display:inline-block">▶</span>
 
       <div class="w-56 shrink-0">
         <!-- Name: span or input -->
-        <div x-show="editingPhase !== phase.id" class="text-sm font-semibold text-white" x-text="phase.name"></div>
+        <div x-show="editingPhase !== phase.id" class="text-base font-bold text-white" x-text="phase.name"></div>
         <input x-show="editingPhase === phase.id" type="text" x-model="editPhaseData.name" @click.stop
                @keydown.enter="savePhase(phase.id)"
-               class="text-sm font-semibold bg-transparent border-b border-cod-accent/40 outline-none w-full py-0.5 text-white focus:border-cod-accent transition-colors">
+               class="text-base font-bold bg-transparent border-b border-cod-accent/40 outline-none w-full py-0.5 text-white focus:border-cod-accent transition-colors">
         <!-- Period: computed from task dates -->
-        <div class="text-xs text-cod-muted" x-text="phasePeriod(phase.id)"></div>
+        <div class="text-sm text-cod-muted" x-text="phasePeriod(phase.id)"></div>
       </div>
 
       <!-- Next task + countdown + decisions + progress (hidden when editing) -->
@@ -26,21 +26,21 @@
           <div class="flex-1 min-w-0">
             <template x-if="nextTask(phase.id)">
               <div class="flex items-center gap-2">
-                <span class="text-xs text-cod-muted">→</span>
-                <span class="text-sm truncate" x-text="nextTask(phase.id).text"></span>
-                <span class="text-xs font-mono shrink-0 ml-auto"
+                <span class="text-sm text-cod-muted">→</span>
+                <span class="text-base truncate" x-text="nextTask(phase.id).text"></span>
+                <span class="text-sm font-mono shrink-0 ml-auto"
                       :class="urgencyColor(phase.id)"
                       x-text="formatDate(nextTask(phase.id).deadlineDate)"></span>
               </div>
             </template>
             <template x-if="!nextTask(phase.id)">
-              <span class="text-sm text-cod-green" x-text="phaseTasks(phase.id).length ? '✓ Terminé' : 'Aucune tâche'"></span>
+              <span class="text-base text-cod-green" x-text="phaseTasks(phase.id).length ? '✓ Terminé' : 'Aucune tâche'"></span>
             </template>
           </div>
 
           <div class="shrink-0 w-16 text-right">
             <template x-if="nextTask(phase.id)">
-              <span class="text-xs font-mono font-bold px-2 py-0.5 rounded"
+              <span class="text-sm font-mono font-bold px-2.5 py-1 rounded"
                     :class="urgencyBadge(phase.id)"
                     x-text="phaseCountdown(phase.id)"></span>
             </template>
@@ -48,42 +48,42 @@
 
           <!-- Decision counter -->
           <template x-if="phaseOpenDecisions(phase.id) > 0">
-            <span class="shrink-0 text-xs font-mono text-cod-accent px-1.5 py-0.5 bg-cod-accent/10 rounded"
+            <span class="shrink-0 text-sm font-mono text-cod-accent px-2 py-1 bg-cod-accent/10 rounded"
                   x-text="'◆ ' + phaseOpenDecisions(phase.id)"></span>
           </template>
 
-          <div class="shrink-0 flex items-center gap-2 w-24">
-            <div class="flex-1 h-1.5 bg-cod-dark rounded-full overflow-hidden">
+          <div class="shrink-0 flex items-center gap-2 w-28">
+            <div class="flex-1 h-2 bg-cod-dark rounded-full overflow-hidden">
               <div class="h-full rounded-full progress-bar"
                    :class="phaseProgress(phase.id) === 100 ? 'bg-cod-green' : 'bg-cod-accent'"
                    :style="'width:' + phaseProgress(phase.id) + '%'"></div>
             </div>
-            <span class="text-xs text-cod-muted w-8 text-right" x-text="phaseStats(phase.id)"></span>
+            <span class="text-sm text-cod-muted w-10 text-right" x-text="phaseStats(phase.id)"></span>
           </div>
         </div>
       </template>
     </div>
 
     <!-- Phase actions -->
-    <div class="flex items-center gap-0.5 shrink-0" @click.stop>
+    <div class="flex items-center gap-1 shrink-0" @click.stop>
       <!-- Read mode: edit + delete -->
       <template x-if="editingPhase !== phase.id">
-        <div class="flex items-center gap-0.5">
+        <div class="flex items-center gap-1">
           <button @click="cancelAllEditing(); editingPhase = phase.id; editPhaseData = {...phase}"
-                  class="text-cod-muted hover:text-cod-accent p-1 rounded-full hover:bg-cod-accent/10 transition-colors" title="Modifier">
-            <%- icon('edit', 'sm') %>
+                  class="text-cod-muted hover:text-cod-accent p-2 rounded-full hover:bg-cod-accent/10 transition-colors" title="Modifier">
+            <%- icon('edit', 'md') %>
           </button>
           <%- include('_delete-confirm', { deleteKey: "'phase-' + phase.id", deleteAction: "deletePhase(phase.id)" }) %>
         </div>
       </template>
       <!-- Edit mode: save + cancel + delete -->
       <template x-if="editingPhase === phase.id">
-        <div class="flex items-center gap-0.5">
-          <button @click="savePhase(phase.id)" class="text-cod-muted hover:text-cod-green p-1 rounded-full hover:bg-cod-green/10 transition-colors" title="Enregistrer">
-            <%- icon('check', 'md') %>
+        <div class="flex items-center gap-1">
+          <button @click="savePhase(phase.id)" class="text-cod-muted hover:text-cod-green p-2 rounded-full hover:bg-cod-green/10 transition-colors" title="Enregistrer">
+            <%- icon('check', 'lg') %>
           </button>
-          <button @click="editingPhase = null" class="text-cod-muted hover:text-white p-1 rounded-full hover:bg-cod-border/50 transition-colors" title="Annuler">
-            <%- icon('cancel', 'md') %>
+          <button @click="editingPhase = null" class="text-cod-muted hover:text-white p-2 rounded-full hover:bg-cod-border/50 transition-colors" title="Annuler">
+            <%- icon('cancel', 'lg') %>
           </button>
           <%- include('_delete-confirm', { deleteKey: "'phase-' + phase.id", deleteAction: "deletePhase(phase.id)" }) %>
         </div>
@@ -93,7 +93,7 @@
 
   <!-- Task list (expandable) -->
   <div x-show="openPhases.includes(phase.id)" x-collapse>
-    <div class="border-t border-cod-border px-4 py-2 space-y-0.5 bg-cod-dark/30">
+    <div class="border-t border-cod-border px-5 py-3 space-y-1.5 bg-cod-dark/30">
       <template x-for="task in phaseTasks(phase.id)" :key="task.id">
         <%- include('_task-row') %>
       </template>

@@ -1,27 +1,27 @@
 <!-- Add task form -->
-<div x-show="addingTaskPhase === phase.id" class="mt-2 bg-cod-card/50 rounded p-3 space-y-2" @click.stop>
+<div x-show="addingTaskPhase === phase.id" class="mt-2 bg-cod-card/50 rounded p-4 space-y-2" @click.stop>
   <input type="text" x-model="newTask.text" placeholder="Description de la tâche"
          @keydown.enter="if (newTask.text.trim()) createTask(phase.id)"
-         class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1.5 text-sm text-cod-text">
+         class="w-full bg-cod-dark border border-cod-border rounded px-3 py-2.5 text-base text-cod-text">
   <textarea x-model="newTask.notes" placeholder="Notes (optionnel, markdown supporté)"
             @keydown.ctrl.enter="if (newTask.text.trim()) createTask(phase.id)"
             @keydown.meta.enter="if (newTask.text.trim()) createTask(phase.id)"
             rows="2"
-            class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text resize-y"></textarea>
+            class="w-full bg-cod-dark border border-cod-border rounded px-3 py-2 text-sm text-cod-text resize-y"></textarea>
   <div class="flex items-center gap-2">
-    <input type="date" x-model="newTask.deadlineDate" class="bg-cod-dark border border-cod-border rounded px-2 py-1 text-xs text-cod-text">
+    <input type="date" x-model="newTask.deadlineDate" class="bg-cod-dark border border-cod-border rounded px-3 py-2 text-sm text-cod-text">
     <div class="flex-1"></div>
-    <button @click="createTask(phase.id)" class="text-cod-muted hover:text-cod-green p-1.5 rounded-full hover:bg-cod-green/10 transition-colors" title="Ajouter">
-      <%- icon('check', 'md') %>
+    <button @click="createTask(phase.id)" class="text-cod-muted hover:text-cod-green p-2.5 rounded-full hover:bg-cod-green/10 transition-colors" title="Ajouter">
+      <%- icon('check', 'lg') %>
     </button>
-    <button @click="addingTaskPhase = null" class="text-cod-muted hover:text-white p-1.5 rounded-full hover:bg-cod-border/50 transition-colors" title="Annuler">
-      <%- icon('cancel', 'md') %>
+    <button @click="addingTaskPhase = null" class="text-cod-muted hover:text-white p-2.5 rounded-full hover:bg-cod-border/50 transition-colors" title="Annuler">
+      <%- icon('cancel', 'lg') %>
     </button>
   </div>
 </div>
 
 <button x-show="addingTaskPhase !== phase.id"
         @click.stop="cancelAllEditing(); addingTaskPhase = phase.id; newTask = { text: '', deadlineDate: '', notes: '', needsDecision: false }"
-        class="text-xs text-cod-muted hover:text-cod-accent mt-2 transition block w-full text-left px-2 py-1">
+        class="text-sm text-cod-muted hover:text-cod-accent mt-2 transition block w-full text-left px-3 py-2">
   + Ajouter une tâche
 </button>

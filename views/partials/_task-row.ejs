@@ -1,5 +1,5 @@
 <%# Single task row — rendered inside x-for="task in phaseTasks(phase.id)" %>
-<div class="flex items-start gap-3 rounded px-2 py-1.5 transition group cursor-pointer task-row"
+<div class="flex items-start gap-4 rounded px-3 py-3 transition group cursor-pointer task-row"
      :class="{
        'opacity-40': task.done,
        'bg-cod-accent/5': editingTask === task.id,
@@ -8,35 +8,37 @@
      @click="if (editingTask !== task.id) { cancelAllEditing(); editingTask = task.id; editTaskData = JSON.parse(JSON.stringify(task)); }">
 
   <!-- Checkbox -->
-  <button @click.stop="toggleTask(task)" class="custom-check mt-0.5" :class="task.done ? 'checked' : ''">
-    <svg class="check-icon w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+  <button @click.stop="toggleTask(task)" class="custom-check mt-1" :class="task.done ? 'checked' : ''">
+    <svg class="check-icon w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
   </button>
 
   <div class="flex-1 min-w-0">
     <!-- Task text: span in read mode, input in edit mode -->
     <div class="flex items-center gap-2">
-      <span x-show="editingTask !== task.id" class="text-sm" :class="task.done ? 'line-through' : ''" x-text="task.text"></span>
+      <span x-show="editingTask !== task.id" class="text-base font-medium" :class="task.done ? 'line-through' : ''" x-text="task.text"></span>
       <input x-show="editingTask === task.id" type="text" x-model="editTaskData.text" @click.stop
              @keydown.enter="saveTask(task.id)"
-             class="text-sm bg-transparent border-b border-cod-accent/40 outline-none w-full py-0.5 text-cod-text focus:border-cod-accent transition-colors">
+             class="text-base bg-transparent border-b border-cod-accent/40 outline-none w-full py-0.5 text-cod-text focus:border-cod-accent transition-colors">
     </div>
 
     <!-- Notes: markdown in read mode, textarea in edit mode -->
     <div x-show="editingTask !== task.id && task.notes && !task.done"
-         class="text-xs text-cod-muted mt-0.5 markdown-body"
+         class="text-sm text-cod-muted mt-1.5 pl-3 border-l-2 border-cod-border/50 markdown-body"
          x-html="renderMarkdown(task.notes)"></div>
     <textarea x-show="editingTask === task.id" x-model="editTaskData.notes" placeholder="Notes (markdown)" @click.stop
               @keydown.ctrl.enter="saveTask(task.id)" @keydown.meta.enter="saveTask(task.id)"
-              rows="3"
-              class="text-xs bg-transparent border border-cod-border/60 rounded outline-none w-full py-1 px-1 mt-0.5 text-cod-muted focus:border-cod-accent/40 transition-colors resize-y"></textarea>
+              x-effect="if (editingTask === task.id) $nextTick(() => { let el = $el; el.style.height = 'auto'; el.style.height = Math.max(el.scrollHeight, 32) + 'px' })"
+              @input="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
+              rows="1"
+              class="text-sm bg-transparent border border-cod-border/60 rounded outline-none w-full py-1.5 px-2 mt-1 text-cod-muted focus:border-cod-accent/40 transition-colors resize-y"></textarea>
 
     <!-- Decision pills: read mode -->
     <template x-if="editingTask !== task.id">
-      <div>
+      <div class="pl-3 mt-1">
         <template x-for="(dec, di) in (task.decisions || [])" :key="'dn'+di">
-          <div class="relative mt-0.5" x-show="!task.done" x-data="{ menuOpen: false }" @click.stop>
+          <div class="relative mt-1" x-show="!task.done" x-data="{ menuOpen: false }" @click.stop>
             <button @click="menuOpen = !menuOpen"
-                    class="text-xs cursor-pointer flex items-center gap-1 rounded px-1.5 py-0.5 border transition"
+                    class="text-sm cursor-pointer flex items-center gap-1.5 rounded px-2.5 py-1 border transition"
                     :class="{
                       'bg-cod-accent/15 text-cod-accent border-cod-accent/30': dec.status === 'open',
                       'bg-cod-blue/15 text-cod-blue border-cod-blue/30': dec.status === 'discussed',
@@ -55,10 +57,10 @@
     <template x-if="editingTask === task.id">
       <div @click.stop>
         <template x-for="(dec, di) in (editTaskData.decisions || [])" :key="'de'+di">
-          <div class="relative mt-0.5" x-data="{ menuOpen: false }">
-            <div class="flex items-center gap-1.5">
+          <div class="relative mt-1" x-data="{ menuOpen: false }">
+            <div class="flex items-center gap-2">
               <button @click="menuOpen = !menuOpen"
-                      class="text-xs cursor-pointer flex items-center gap-1 rounded px-1.5 py-0.5 border transition shrink-0"
+                      class="text-sm cursor-pointer flex items-center gap-1.5 rounded px-2.5 py-1 border transition shrink-0"
                       :class="{
                         'bg-cod-accent/15 text-cod-accent border-cod-accent/30': dec.status === 'open',
                         'bg-cod-blue/15 text-cod-blue border-cod-blue/30': dec.status === 'discussed',
@@ -69,37 +71,37 @@
               </button>
               <input type="text" x-model="editTaskData.decisions[di].notes" placeholder="Notes décision"
                      @keydown.enter="saveTask(task.id)"
-                     class="flex-1 text-xs bg-transparent border-b border-cod-border/60 outline-none py-0.5 text-cod-muted focus:border-cod-accent/40 transition-colors">
+                     class="flex-1 text-sm bg-transparent border-b border-cod-border/60 outline-none py-0.5 text-cod-muted focus:border-cod-accent/40 transition-colors">
               <button @click="editTaskData.decisions.splice(di, 1)"
-                      class="text-cod-muted hover:text-cod-red text-xs px-1" title="Supprimer la décision">✕</button>
+                      class="text-cod-muted hover:text-cod-red text-sm px-1" title="Supprimer la décision">✕</button>
             </div>
             <%- include('_decision-dropdown', { clickAction: "editTaskData.decisions[di].status = opt.v; menuOpen = false" }) %>
           </div>
         </template>
         <button @click="editTaskData.decisions = [...(editTaskData.decisions || []), { status: 'open', notes: '' }]"
-                class="text-xs text-cod-accent hover:text-cod-accent/80 mt-1">+ Décision</button>
+                class="text-sm text-cod-accent hover:text-cod-accent/80 mt-1.5">+ Décision</button>
       </div>
     </template>
   </div>
 
   <!-- Date + action buttons -->
-  <div class="shrink-0 flex items-center gap-1.5" @click.stop>
-    <span x-show="editingTask !== task.id" class="text-xs font-mono"
+  <div class="shrink-0 flex items-center gap-2" @click.stop>
+    <span x-show="editingTask !== task.id" class="text-sm font-mono"
           :class="task.done ? 'text-cod-muted' : taskUrgencyColor(task)"
           x-text="formatDate(task.deadlineDate)"></span>
     <input x-show="editingTask === task.id" type="date" x-model="editTaskData.deadlineDate"
-           class="text-xs bg-transparent border-b border-cod-accent/40 outline-none py-0.5 text-cod-text font-mono focus:border-cod-accent transition-colors">
+           class="text-sm bg-transparent border-b border-cod-accent/40 outline-none py-0.5 text-cod-text font-mono focus:border-cod-accent transition-colors">
 
     <!-- Action buttons (edit mode only) -->
     <template x-if="editingTask === task.id">
-      <div class="flex items-center gap-0.5 ml-1">
-        <button @click="saveTask(task.id)" class="text-cod-muted hover:text-cod-green p-1 rounded-full hover:bg-cod-green/10 transition-colors" title="Enregistrer">
-          <%- icon('check', 'md') %>
+      <div class="flex items-center gap-1 ml-2">
+        <button @click="saveTask(task.id)" class="text-cod-muted hover:text-cod-green p-2 rounded-full hover:bg-cod-green/10 transition-colors" title="Enregistrer">
+          <%- icon('check', 'lg') %>
         </button>
-        <button @click.stop="editingTask = null" class="text-cod-muted hover:text-white p-1 rounded-full hover:bg-cod-border/50 transition-colors" title="Annuler">
-          <%- icon('cancel', 'md') %>
+        <button @click.stop="editingTask = null" class="text-cod-muted hover:text-white p-2 rounded-full hover:bg-cod-border/50 transition-colors" title="Annuler">
+          <%- icon('cancel', 'lg') %>
         </button>
-        <%- include('_delete-confirm', { deleteKey: "task.id", deleteAction: "deleteTask(task.id)", confirmTitle: "Confirmer la suppression", size: "md" }) %>
+        <%- include('_delete-confirm', { deleteKey: "task.id", deleteAction: "deleteTask(task.id)", confirmTitle: "Confirmer la suppression", size: "lg" }) %>
       </div>
     </template>
   </div>

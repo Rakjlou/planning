@@ -38,7 +38,7 @@
     .urgency-glow-done { box-shadow: inset 3px 0 0 var(--color-cod-green); opacity: 0.6; }
 
     .custom-check {
-      width: 20px; height: 20px; min-width: 20px;
+      width: 28px; height: 28px; min-width: 28px;
       border: 2px solid var(--color-cod-muted);
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
@@ -59,9 +59,9 @@
     ::-webkit-scrollbar-track { background: var(--color-cod-dark); }
     ::-webkit-scrollbar-thumb { background: var(--color-cod-border); border-radius: 4px; }
 
-    .markdown-body h1 { font-size: 1.15em; font-weight: 700; color: var(--color-cod-text); margin: 0.4em 0 0.2em; }
-    .markdown-body h2 { font-size: 1.05em; font-weight: 700; color: var(--color-cod-text); margin: 0.35em 0 0.15em; }
-    .markdown-body h3 { font-size: 1em; font-weight: 700; color: var(--color-cod-text); margin: 0.3em 0 0.1em; }
+    .markdown-body h1 { font-size: 0.95em; font-weight: 700; color: var(--color-cod-text); margin: 0.4em 0 0.2em; }
+    .markdown-body h2 { font-size: 0.9em; font-weight: 700; color: var(--color-cod-text); margin: 0.35em 0 0.15em; }
+    .markdown-body h3 { font-size: 0.85em; font-weight: 700; color: var(--color-cod-text); margin: 0.3em 0 0.1em; }
     .markdown-body p { margin: 0.25em 0; }
     .markdown-body ul, .markdown-body ol { margin: 0.25em 0; padding-left: 1.25em; }
     .markdown-body ul { list-style: disc; }
@@ -96,7 +96,7 @@
     <%- include('partials/_legend') %>
 
     <!-- Phase cards -->
-    <div class="space-y-3">
+    <div class="space-y-4">
       <template x-for="phase in phases" :key="phase.id">
         <%- include('partials/_phase-card') %>
       </template>
