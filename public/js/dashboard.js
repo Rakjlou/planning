@@ -46,6 +46,11 @@ function dashboard() {
 
     // ── Computed ──────────────────────────────────────────
 
+    renderMarkdown(text) {
+      if (!text) return '';
+      return DOMPurify.sanitize(marked.parse(text, { breaks: true }));
+    },
+
     formatDate(dateStr) {
       if (!dateStr) return '';
       return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });

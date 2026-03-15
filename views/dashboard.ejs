@@ -58,6 +58,21 @@
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: var(--color-cod-dark); }
     ::-webkit-scrollbar-thumb { background: var(--color-cod-border); border-radius: 4px; }
+
+    .markdown-body h1 { font-size: 1.15em; font-weight: 700; color: var(--color-cod-text); margin: 0.4em 0 0.2em; }
+    .markdown-body h2 { font-size: 1.05em; font-weight: 700; color: var(--color-cod-text); margin: 0.35em 0 0.15em; }
+    .markdown-body h3 { font-size: 1em; font-weight: 700; color: var(--color-cod-text); margin: 0.3em 0 0.1em; }
+    .markdown-body p { margin: 0.25em 0; }
+    .markdown-body ul, .markdown-body ol { margin: 0.25em 0; padding-left: 1.25em; }
+    .markdown-body ul { list-style: disc; }
+    .markdown-body ol { list-style: decimal; }
+    .markdown-body li { margin: 0.1em 0; }
+    .markdown-body strong { font-weight: 600; color: var(--color-cod-text); }
+    .markdown-body em { font-style: italic; }
+    .markdown-body code { background: var(--color-cod-card); padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.9em; }
+    .markdown-body a { color: var(--color-cod-accent); text-decoration: underline; }
+    .markdown-body a:hover { opacity: 0.8; }
+    .markdown-body blockquote { border-left: 2px solid var(--color-cod-border); padding-left: 0.5em; color: var(--color-cod-muted); margin: 0.25em 0; }
   </style>
 </head>
 
@@ -95,6 +110,8 @@
 
   <%- include('partials/_footer') %>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
 <script src="/js/urgency.js"></script>
 <script src="/js/dashboard.js"></script>
 
