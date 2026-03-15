@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retroplanning Album — Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.15/dist/cdn.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15/dist/cdn.min.js"></script>
+
+  <style type="text/tailwindcss">
+    @theme {
+      --color-cod-dark: #0f0f0f;
+      --color-cod-bg: #1a1a1a;
+      --color-cod-card: #242424;
+      --color-cod-border: #333;
+      --color-cod-text: #e0e0e0;
+      --color-cod-muted: #888;
+      --color-cod-accent: #f59e0b;
+      --color-cod-green: #22c55e;
+      --color-cod-red: #ef4444;
+      --color-cod-orange: #f97316;
+      --color-cod-blue: #3b82f6;
+    }
+
+    body { background: var(--color-cod-dark); color: var(--color-cod-text); }
+
+    .phase-card { transition: all 0.2s ease; }
+    .phase-card:hover { border-color: var(--color-cod-accent); }
+    .task-done { text-decoration: line-through; opacity: 0.5; }
+    .progress-bar { transition: width 0.5s ease; }
+
+    .urgency-glow-red { box-shadow: inset 3px 0 0 var(--color-cod-red); }
+    .urgency-glow-orange { box-shadow: inset 3px 0 0 var(--color-cod-orange); }
+    .urgency-glow-yellow { box-shadow: inset 3px 0 0 var(--color-cod-accent); }
+    .urgency-glow-green { box-shadow: inset 3px 0 0 var(--color-cod-green); }
+    .urgency-glow-done { box-shadow: inset 3px 0 0 var(--color-cod-green); opacity: 0.6; }
+
+    .custom-check {
+      width: 20px; height: 20px; min-width: 20px;
+      border: 2px solid var(--color-cod-muted);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s ease;
+      cursor: pointer; background: transparent;
+    }
+    .custom-check:hover { border-color: var(--color-cod-accent); }
+    .custom-check.checked {
+      background: var(--color-cod-green);
+      border-color: var(--color-cod-green);
+    }
+    .custom-check .check-icon { opacity: 0; transition: opacity 0.2s ease; }
+    .custom-check.checked .check-icon { opacity: 1; }
+
+    .task-row { transition: opacity 0.3s ease; }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--color-cod-dark); }
+    ::-webkit-scrollbar-thumb { background: var(--color-cod-border); border-radius: 4px; }
+  </style>
+</head>
+
+<body class="min-h-screen font-sans" x-data="dashboard()" x-init="loadData()" @keydown.window.escape="cancelAllEditing()" @click="cancelAllEditing()">
+
+  <%- include('partials/_header') %>
+
+  <main class="max-w-7xl mx-auto px-6 py-6">
+
+    <!-- ══════════ EMPTY STATE ══════════ -->
+    <div x-show="phases.length === 0" class="text-center py-16" @click.stop>
+      <div class="text-cod-muted text-lg mb-4">Aucune phase créée</div>
+      <p class="text-cod-muted text-sm mb-6">Commencez par créer une phase, puis ajoutez-y des tâches.</p>
+      <button @click.stop="cancelAllEditing(); creatingPhase = true; newPhase = { name: '', period: '', milestones: '' }" class="bg-cod-accent text-cod-dark px-4 py-2 rounded text-sm font-semibold hover:brightness-110 transition">
+        + Nouvelle phase
+      </button>
+    </div>
+
+    <!-- ══════════ DASHBOARD ══════════ -->
+
+    <%- include('partials/_legend') %>
+
+    <!-- Phase cards -->
+    <div class="space-y-3">
+      <template x-for="phase in phases" :key="phase.id">
+        <%- include('partials/_phase-card') %>
+      </template>
+    </div>
+
+    <%- include('partials/_new-phase-form') %>
+
+    <%- include('partials/_decision-log') %>
+
+  </main>
+
+  <%- include('partials/_footer') %>
+
+<script src="/js/urgency.js"></script>
+<script src="/js/dashboard.js"></script>
+
+</body>
+</html>

@@ -753,16 +753,6 @@
       "notes": "",
       "key": false,
       "done": false
-    },
-    {
-      "id": "t-1",
-      "phase": "prod",
-      "text": "AA",
-      "deadlineDate": "2026-04-17",
-      "notes": "",
-      "isReleaseDate": false,
-      "done": false,
-      "decisions": []
     }
   ],
   "decisionLog": [

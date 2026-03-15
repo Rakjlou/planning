@@ -1,0 +1,30 @@
+<!-- New phase form -->
+<div x-show="creatingPhase" class="mt-4 bg-cod-card rounded-lg border border-cod-border p-4 space-y-3" @click.stop>
+  <h3 class="text-sm font-semibold text-white">Nouvelle phase</h3>
+  <div class="flex gap-3 items-end">
+    <div class="flex-1">
+      <label class="text-xs text-cod-muted block mb-1">Nom</label>
+      <input type="text" x-model="newPhase.name" placeholder="ex: 1 — Production" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1.5 text-sm text-cod-text">
+    </div>
+    <div class="w-40">
+      <label class="text-xs text-cod-muted block mb-1">Période</label>
+      <input type="text" x-model="newPhase.period" placeholder="ex: mars → mai" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1.5 text-sm text-cod-text">
+    </div>
+    <div class="flex-1">
+      <label class="text-xs text-cod-muted block mb-1">Jalons</label>
+      <input type="text" x-model="newPhase.milestones" placeholder="Résumé des jalons clés" class="w-full bg-cod-dark border border-cod-border rounded px-2 py-1.5 text-sm text-cod-text">
+    </div>
+    <button @click="createPhase()" class="text-cod-muted hover:text-cod-green p-1.5 rounded-full hover:bg-cod-green/10 transition-colors" title="Créer">
+      <%- icon('check', 'lg') %>
+    </button>
+    <button @click="creatingPhase = false" class="text-cod-muted hover:text-white p-1.5 rounded-full hover:bg-cod-border/50 transition-colors" title="Annuler">
+      <%- icon('cancel', 'lg') %>
+    </button>
+  </div>
+</div>
+
+<button x-show="phases.length > 0 && !creatingPhase"
+        @click.stop="cancelAllEditing(); creatingPhase = true; newPhase = { name: '', period: '', milestones: '' }"
+        class="mt-4 text-sm text-cod-muted hover:text-cod-accent transition">
+  + Nouvelle phase
+</button>

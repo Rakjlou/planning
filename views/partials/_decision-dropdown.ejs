@@ -1,0 +1,20 @@
+<%# Reusable decision status dropdown menu.
+     Parameters:
+       clickAction — Alpine expression template with {{opt}} placeholder for the option variable
+                     e.g. "updateTaskDecision(task, di, {{opt}}.v); menuOpen = false"
+%>
+<div x-show="menuOpen" @click.outside="menuOpen = false"
+     class="absolute left-0 top-full mt-1 z-50 bg-cod-card border border-cod-border rounded shadow-lg py-1 min-w-[120px]">
+  <template x-for="opt in decisionStatuses">
+    <button @click="<%= clickAction %>"
+            class="w-full text-left text-xs px-3 py-1.5 flex items-center gap-2 hover:bg-cod-dark/50 transition"
+            :class="{
+              'text-cod-accent': opt.v === 'open',
+              'text-cod-blue': opt.v === 'discussed',
+              'text-cod-green': opt.v === 'decided'
+            }">
+      <span x-text="opt.i"></span>
+      <span x-text="opt.l"></span>
+    </button>
+  </template>
+</div>

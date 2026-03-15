@@ -1,0 +1,19 @@
+<!-- ══════════ JOURNAL DES DÉCISIONS ══════════ -->
+<div x-show="phases.length > 0" class="mt-8" @click.stop>
+  <h2 class="text-lg font-semibold text-white mb-4">Journal des décisions</h2>
+  <div class="bg-cod-card rounded-lg border border-cod-border divide-y divide-cod-border mb-4" x-show="decisionLog.length > 0">
+    <template x-for="(entry, i) in decisionLog" :key="i">
+      <div class="px-4 py-3 flex gap-4">
+        <span class="text-xs text-cod-muted font-mono shrink-0" x-text="entry.date"></span>
+        <span class="text-sm" x-text="entry.text"></span>
+      </div>
+    </template>
+  </div>
+
+  <div class="flex gap-2 items-center">
+    <input type="text" x-model="newLogEntry" placeholder="Ajouter une entrée au journal..."
+           @keydown.enter="addLogEntry()"
+           class="flex-1 bg-cod-dark border border-cod-border rounded px-3 py-1.5 text-sm text-cod-text">
+    <button @click="addLogEntry()" class="text-xs text-cod-accent hover:underline" x-show="newLogEntry.trim()">Ajouter</button>
+  </div>
+</div>
