@@ -64,7 +64,7 @@ export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
   const app = express();
   app.set('view engine', 'ejs');
   app.set('views', join(__dirname, 'views'));
-  app.enable('view cache');
+  if (!process.argv.includes('--dev')) app.enable('view cache');
   app.use(express.json());
   app.use(express.static(join(__dirname, 'public')));
 
