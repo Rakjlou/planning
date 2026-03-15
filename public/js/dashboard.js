@@ -89,6 +89,7 @@ function dashboard() {
       this.tasks = data.tasks;
       this.decisionLog = data.decisionLog;
       this.contributors = data.contributors || [];
+      this.sortPhases();
       this.rebuildNextTaskCache();
     },
 
@@ -154,6 +155,20 @@ function dashboard() {
       this._nextTaskCache = map;
     },
 
+    sortPhases() {
+      const earliest = {};
+      for (const t of this.tasks) {
+        if (t.deadlineDate && (!earliest[t.phase] || t.deadlineDate < earliest[t.phase])) {
+          earliest[t.phase] = t.deadlineDate;
+        }
+      }
+      this.phases.sort((a, b) => {
+        const da = earliest[a.id] || '\uffff';
+        const db = earliest[b.id] || '\uffff';
+        return da.localeCompare(db);
+      });
+    },
+
     nextTask(phaseId) {
       return this._nextTaskCache[phaseId] ?? null;
     },
@@ -174,6 +189,7 @@ function dashboard() {
       this.tasks.push(task);
       this.addingTaskPhase = null;
       this.newTask = { text: '', deadlineDate: '', notes: '', needsDecision: false, contributors: [] };
+      this.sortPhases();
       this.rebuildNextTaskCache();
     },
 
@@ -184,6 +200,7 @@ function dashboard() {
       const idx = this.tasks.findIndex(t => t.id === id);
       if (idx >= 0) this.tasks[idx] = updated;
       this.editingTask = null;
+      this.sortPhases();
       this.rebuildNextTaskCache();
     },
 
@@ -192,6 +209,7 @@ function dashboard() {
       this.tasks = this.tasks.filter(t => t.id !== id);
       this.editingTask = null;
       this.confirmingDelete = null;
+      this.sortPhases();
       this.rebuildNextTaskCache();
     },
 
