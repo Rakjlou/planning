@@ -4,48 +4,39 @@
   "phases": [
     {
       "id": "prod",
-      "name": "1 — Production",
-      "period": "mars → mai"
+      "name": "1 — Production"
     },
     {
       "id": "visual",
-      "name": "2 — Identité visuelle",
-      "period": "mars → juillet"
+      "name": "2 — Identité visuelle"
     },
     {
       "id": "distrib",
-      "name": "3 — Distribution & Plateformes",
-      "period": "mai → août"
+      "name": "3 — Distribution & Plateformes"
     },
     {
       "id": "singles",
-      "name": "4 — Singles",
-      "period": "août → septembre"
+      "name": "4 — Singles"
     },
     {
       "id": "press",
-      "name": "5 — Presse & Promo",
-      "period": "juillet → octobre"
+      "name": "5 — Presse & Promo"
     },
     {
       "id": "physical",
-      "name": "6 — Physique",
-      "period": "juin → septembre"
+      "name": "6 — Physique"
     },
     {
       "id": "booking",
-      "name": "7 — Booking & Tournée",
-      "period": "mai → hiver"
+      "name": "7 — Booking & Tournée"
     },
     {
       "id": "summer",
-      "name": "8 — Été = Préparation",
-      "period": "mai → août"
+      "name": "8 — Été = Préparation"
     },
     {
       "id": "release",
-      "name": "9 — Sortie & Post-sortie",
-      "period": "26 sept →"
+      "name": "9 — Sortie & Post-sortie"
     }
   ],
   "tasks": [
@@ -54,7 +45,7 @@
       "phase": "prod",
       "text": "Finaliser le mix",
       "deadline": "18 avril",
-      "deadlineDate": "2026-04-18",
+      "deadlineDate": "2026-12-18",
       "notes": "Confortable. Priorité haute mais pas de panique.",
       "key": false,
       "done": false,

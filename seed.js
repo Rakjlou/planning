@@ -6,15 +6,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const data = {
   phases: [
-    { id: 'prod',     name: '1 — Production',                  period: 'mars → mai' },
-    { id: 'visual',   name: '2 — Identité visuelle',           period: 'mars → juillet' },
-    { id: 'distrib',  name: '3 — Distribution & Plateformes',  period: 'mai → août' },
-    { id: 'singles',  name: '4 — Singles',                      period: 'août → septembre' },
-    { id: 'press',    name: '5 — Presse & Promo',              period: 'juillet → octobre' },
-    { id: 'physical', name: '6 — Physique',                     period: 'juin → septembre' },
-    { id: 'booking',  name: '7 — Booking & Tournée',           period: 'mai → hiver' },
-    { id: 'summer',   name: '8 — Été = Préparation',           period: 'mai → août' },
-    { id: 'release',  name: '9 — Sortie & Post-sortie',        period: '26 sept →' },
+    { id: 'prod',     name: '1 — Production' },
+    { id: 'visual',   name: '2 — Identité visuelle' },
+    { id: 'distrib',  name: '3 — Distribution & Plateformes' },
+    { id: 'singles',  name: '4 — Singles' },
+    { id: 'press',    name: '5 — Presse & Promo' },
+    { id: 'physical', name: '6 — Physique' },
+    { id: 'booking',  name: '7 — Booking & Tournée' },
+    { id: 'summer',   name: '8 — Été = Préparation' },
+    { id: 'release',  name: '9 — Sortie & Post-sortie' },
   ],
 
   tasks: [

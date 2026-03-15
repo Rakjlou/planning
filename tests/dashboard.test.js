@@ -49,9 +49,11 @@ describe('Chargement & affichage', () => {
     assert.ok(names.some(n => n.includes('Phase Beta')));
   });
 
-  it('affiche les périodes', async () => {
-    const text = await card(0).textContent();
-    assert.ok(text.includes('mars → mai'));
+  it('affiche les périodes calculées depuis les dates des tâches', async () => {
+    const textAlpha = await card(0).textContent();
+    assert.ok(textAlpha.includes('avril → mai'), 'Phase Alpha devrait afficher "avril → mai"');
+    const textBeta = await card(1).textContent();
+    assert.ok(textBeta.includes('juillet → août'), 'Phase Beta devrait afficher "juillet → août"');
   });
 
   it('affiche la barre de progression globale', async () => {
@@ -67,10 +69,9 @@ describe('Édition de phase', () => {
   before(setup);
   after(teardown);
 
-  it('clic crayon → champs inline apparaissent', async () => {
+  it('clic crayon → champ nom inline apparaît', async () => {
     await card(0).getByTitle('Modifier').click();
     await card(0).locator('input[x-model="editPhaseData.name"]').waitFor({ state: 'visible', timeout: TIMEOUT });
-    await card(0).locator('input[x-model="editPhaseData.period"]').waitFor({ state: 'visible', timeout: TIMEOUT });
   });
 
   it('Save → changement persisté après reload', async () => {
@@ -284,7 +285,6 @@ describe('Création de phase', () => {
     // The visible button (x-show="phases.length > 0 && !creatingPhase")
     await page.locator('button:visible', { hasText: '+ Nouvelle phase' }).click();
     await page.locator('input[placeholder="ex: 1 — Production"]').fill('Phase Gamma');
-    await page.locator('input[placeholder="ex: mars → mai"]').fill('sept → nov');
     await page.getByTitle('Créer').click();
 
     await page.waitForFunction((before) => {

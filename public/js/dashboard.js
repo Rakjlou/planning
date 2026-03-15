@@ -16,7 +16,7 @@ function dashboard() {
     creatingPhase: false,
     editingPhase: null,
     editPhaseData: {},
-    newPhase: { name: '', period: '' },
+    newPhase: { name: '' },
 
     addingTaskPhase: null,
     editingTask: null,
@@ -98,12 +98,12 @@ function dashboard() {
       const phase = await this.api('POST', 'phases', this.newPhase);
       this.phases.push(phase);
       this.creatingPhase = false;
-      this.newPhase = { name: '', period: '' };
+      this.newPhase = { name: '' };
     },
 
     async savePhase(id) {
-      const { name, period } = this.editPhaseData;
-      const updated = await this.api('PUT', `phases/${id}`, { name, period });
+      const { name } = this.editPhaseData;
+      const updated = await this.api('PUT', `phases/${id}`, { name });
       const idx = this.phases.findIndex(p => p.id === id);
       if (idx >= 0) this.phases[idx] = updated;
       this.editingPhase = null;
@@ -218,6 +218,23 @@ function dashboard() {
     },
 
     // ── Phase display helpers ────────────────────────────
+
+    phasePeriod(phaseId) {
+      const dates = this.tasks
+        .filter(t => t.phase === phaseId && t.deadlineDate)
+        .map(t => t.deadlineDate)
+        .sort();
+      if (!dates.length) return '';
+      const fmt = (iso) => {
+        const d = new Date(iso + 'T00:00:00');
+        return { month: d.toLocaleDateString('fr-FR', { month: 'long' }), year: d.getFullYear() };
+      };
+      const first = fmt(dates[0]);
+      const last = fmt(dates[dates.length - 1]);
+      if (first.month === last.month && first.year === last.year) return first.month;
+      const suffix = last.year !== first.year ? ' ' + last.year : '';
+      return first.month + ' → ' + last.month + suffix;
+    },
 
     togglePhase(phaseId) {
       const idx = this.openPhases.indexOf(phaseId);

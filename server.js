@@ -99,7 +99,6 @@ export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
       const phase = {
         id: nextId(data.phases, 'phase-'),
         name: req.body.name || '',
-        period: req.body.period || '',
       };
       data.phases.push(phase);
       return phase;

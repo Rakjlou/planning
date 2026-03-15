@@ -15,10 +15,8 @@
         <div x-show="editingPhase !== phase.id" class="text-sm font-semibold text-white" x-text="phase.name"></div>
         <input x-show="editingPhase === phase.id" type="text" x-model="editPhaseData.name" @click.stop
                class="text-sm font-semibold bg-transparent border-b border-cod-accent/40 outline-none w-full py-0.5 text-white focus:border-cod-accent transition-colors">
-        <!-- Period: span or input -->
-        <div x-show="editingPhase !== phase.id" class="text-xs text-cod-muted" x-text="phase.period"></div>
-        <input x-show="editingPhase === phase.id" type="text" x-model="editPhaseData.period" @click.stop
-               class="text-xs bg-transparent border-b border-cod-border/60 outline-none w-full py-0.5 text-cod-muted focus:border-cod-accent/40 transition-colors">
+        <!-- Period: computed from task dates -->
+        <div class="text-xs text-cod-muted" x-text="phasePeriod(phase.id)"></div>
       </div>
 
       <!-- Next task + countdown + decisions + progress (hidden when editing) -->
