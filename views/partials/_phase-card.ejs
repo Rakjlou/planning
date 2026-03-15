@@ -21,12 +21,6 @@
                class="text-xs bg-transparent border-b border-cod-border/60 outline-none w-full py-0.5 text-cod-muted focus:border-cod-accent/40 transition-colors">
       </div>
 
-      <!-- Milestones input (only when editing) -->
-      <div x-show="editingPhase === phase.id" class="flex-1 min-w-0" @click.stop>
-        <input type="text" x-model="editPhaseData.milestones" placeholder="Jalons"
-               class="text-sm bg-transparent border-b border-cod-border/60 outline-none w-full py-0.5 text-cod-muted focus:border-cod-accent/40 transition-colors">
-      </div>
-
       <!-- Next task + countdown + decisions + progress (hidden when editing) -->
       <template x-if="editingPhase !== phase.id">
         <div class="flex items-center gap-2 flex-1 min-w-0">

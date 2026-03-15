@@ -71,7 +71,7 @@
     <div x-show="phases.length === 0" class="text-center py-16" @click.stop>
       <div class="text-cod-muted text-lg mb-4">Aucune phase créée</div>
       <p class="text-cod-muted text-sm mb-6">Commencez par créer une phase, puis ajoutez-y des tâches.</p>
-      <button @click.stop="cancelAllEditing(); creatingPhase = true; newPhase = { name: '', period: '', milestones: '' }" class="bg-cod-accent text-cod-dark px-4 py-2 rounded text-sm font-semibold hover:brightness-110 transition">
+      <button @click.stop="cancelAllEditing(); creatingPhase = true; newPhase = { name: '', period: '' }" class="bg-cod-accent text-cod-dark px-4 py-2 rounded text-sm font-semibold hover:brightness-110 transition">
         + Nouvelle phase
       </button>
     </div>

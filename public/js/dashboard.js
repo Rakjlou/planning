@@ -16,7 +16,7 @@ function dashboard() {
     creatingPhase: false,
     editingPhase: null,
     editPhaseData: {},
-    newPhase: { name: '', period: '', milestones: '' },
+    newPhase: { name: '', period: '' },
 
     addingTaskPhase: null,
     editingTask: null,
@@ -98,12 +98,12 @@ function dashboard() {
       const phase = await this.api('POST', 'phases', this.newPhase);
       this.phases.push(phase);
       this.creatingPhase = false;
-      this.newPhase = { name: '', period: '', milestones: '' };
+      this.newPhase = { name: '', period: '' };
     },
 
     async savePhase(id) {
-      const { name, period, milestones } = this.editPhaseData;
-      const updated = await this.api('PUT', `phases/${id}`, { name, period, milestones });
+      const { name, period } = this.editPhaseData;
+      const updated = await this.api('PUT', `phases/${id}`, { name, period });
       const idx = this.phases.findIndex(p => p.id === id);
       if (idx >= 0) this.phases[idx] = updated;
       this.editingPhase = null;

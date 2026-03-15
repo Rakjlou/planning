@@ -6,15 +6,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const data = {
   phases: [
-    { id: 'prod',     name: '1 — Production',                  period: 'mars → mai',        milestones: 'Mix 18/04, Masters singles 09/05, Master album 23/05' },
-    { id: 'visual',   name: '2 — Identité visuelle',           period: 'mars → juillet',    milestones: 'Artwork 30/05, Clip 18/07' },
-    { id: 'distrib',  name: '3 — Distribution & Plateformes',  period: 'mai → août',        milestones: 'Distrib mai, Single soumis 04/07, Album soumis 15/08' },
-    { id: 'singles',  name: '4 — Singles',                      period: 'août → septembre',  milestones: 'Single 1 + clip 01/08, Single 2 05/09' },
-    { id: 'press',    name: '5 — Presse & Promo',              period: 'juillet → octobre',  milestones: 'EPK juillet, Promos 01/08' },
-    { id: 'physical', name: '6 — Physique',                     period: 'juin → septembre',  milestones: 'Vinyle commandé juin, CDs août' },
-    { id: 'booking',  name: '7 — Booking & Tournée',           period: 'mai → hiver',       milestones: 'Booking juin-juil, Release show ~26/09' },
-    { id: 'summer',   name: '8 — Été = Préparation',           period: 'mai → août',        milestones: 'Clip, merch, mailing list, rodage live' },
-    { id: 'release',  name: '9 — Sortie & Post-sortie',        period: '26 sept →',         milestones: '🎯 SORTIE 26 SEPTEMBRE' },
+    { id: 'prod',     name: '1 — Production',                  period: 'mars → mai' },
+    { id: 'visual',   name: '2 — Identité visuelle',           period: 'mars → juillet' },
+    { id: 'distrib',  name: '3 — Distribution & Plateformes',  period: 'mai → août' },
+    { id: 'singles',  name: '4 — Singles',                      period: 'août → septembre' },
+    { id: 'press',    name: '5 — Presse & Promo',              period: 'juillet → octobre' },
+    { id: 'physical', name: '6 — Physique',                     period: 'juin → septembre' },
+    { id: 'booking',  name: '7 — Booking & Tournée',           period: 'mai → hiver' },
+    { id: 'summer',   name: '8 — Été = Préparation',           period: 'mai → août' },
+    { id: 'release',  name: '9 — Sortie & Post-sortie',        period: '26 sept →' },
   ],
 
   tasks: [

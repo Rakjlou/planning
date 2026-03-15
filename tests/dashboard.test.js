@@ -285,7 +285,6 @@ describe('Création de phase', () => {
     await page.locator('button:visible', { hasText: '+ Nouvelle phase' }).click();
     await page.locator('input[placeholder="ex: 1 — Production"]').fill('Phase Gamma');
     await page.locator('input[placeholder="ex: mars → mai"]').fill('sept → nov');
-    await page.locator('input[placeholder="Résumé des jalons clés"]').fill('Jalon G');
     await page.getByTitle('Créer').click();
 
     await page.waitForFunction((before) => {

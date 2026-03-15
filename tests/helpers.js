@@ -6,8 +6,8 @@ import { createServer } from '../server.js';
 
 export const SEED_DATA = {
   phases: [
-    { id: 'phase-1', name: 'Phase Alpha', period: 'mars → mai', milestones: 'Jalon A 01/04' },
-    { id: 'phase-2', name: 'Phase Beta', period: 'juin → août', milestones: 'Jalon B 15/07' },
+    { id: 'phase-1', name: 'Phase Alpha', period: 'mars → mai' },
+    { id: 'phase-2', name: 'Phase Beta', period: 'juin → août' },
   ],
   tasks: [
     { id: 't-1', phase: 'phase-1', text: 'Tâche un', deadlineDate: '2026-04-15', notes: 'Note alpha', done: false, decisions: [{ status: 'open', notes: '' }] },
