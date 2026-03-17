@@ -2,36 +2,18 @@ import express from 'express';
 import { readFile, writeFile, mkdir, access } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { randomBytes, scryptSync, timingSafeEqual, createHmac } from 'crypto';
+import { randomBytes } from 'crypto';
+import {
+  CONTRIBUTOR_COLORS, EMPTY_DATA,
+  hashPassword, verifyPassword,
+  makeAuthToken, verifyAuthToken,
+  isValidSlug, parseCookie,
+} from './lib/shared.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, 'data');
 const PORT = process.env.PORT || 3000;
 const ALLOW_CREATE = process.env.ALLOW_CREATE === 'true';
-
-// ── Contributor color palette ────────────────────────────
-
-const CONTRIBUTOR_COLORS = [
-  '#a78bfa', // violet
-  '#f472b6', // pink
-  '#22d3ee', // cyan
-  '#2dd4bf', // teal
-  '#fb7185', // rose
-  '#818cf8', // indigo
-  '#a3e635', // lime
-  '#e879f9', // fuchsia
-  '#38bdf8', // sky
-  '#fcd34d', // amber
-];
-
-// ── Empty database template ──────────────────────────────
-
-const EMPTY_DATA = {
-  contributors: [],
-  phases: [],
-  tasks: [],
-  decisionLog: [],
-};
 
 // ── ID generation ────────────────────────────────────────
 
@@ -40,54 +22,6 @@ function nextId(collection, prefix) {
     .map(item => parseInt(item.id.replace(prefix, ''), 10))
     .filter(n => !isNaN(n));
   return prefix + (nums.length ? Math.max(...nums) + 1 : 1);
-}
-
-// ── Slug validation ──────────────────────────────────────
-
-const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
-const SLUG_BLOCKLIST = new Set(['api', 'js', 'css', 'public', 'favicon', 'data']);
-
-function isValidSlug(slug) {
-  return SLUG_RE.test(slug) && !SLUG_BLOCKLIST.has(slug);
-}
-
-// ── Password hashing ─────────────────────────────────────
-
-function hashPassword(password) {
-  const salt = randomBytes(16).toString('hex');
-  const hash = scryptSync(password, salt, 64).toString('hex');
-  return { hash, salt };
-}
-
-function verifyPassword(password, { hash, salt }) {
-  const buf = scryptSync(password, salt, 64);
-  return timingSafeEqual(buf, Buffer.from(hash, 'hex'));
-}
-
-// ── Auth tokens (HMAC cookie) ────────────────────────────
-
-function makeAuthToken(slug, secret) {
-  const ts = Date.now().toString(36);
-  const hmac = createHmac('sha256', secret).update(slug + ':' + ts).digest('hex');
-  return ts + ':' + hmac;
-}
-
-function verifyAuthToken(token, slug, secret, maxAgeMs = 7 * 24 * 3600 * 1000) {
-  if (!token) return false;
-  const parts = token.split(':');
-  if (parts.length !== 2) return false;
-  const [ts, hmac] = parts;
-  const timestamp = parseInt(ts, 36);
-  if (isNaN(timestamp) || Date.now() - timestamp > maxAgeMs) return false;
-  const expected = createHmac('sha256', secret).update(slug + ':' + ts).digest('hex');
-  if (hmac.length !== expected.length) return false;
-  return timingSafeEqual(Buffer.from(hmac), Buffer.from(expected));
-}
-
-function parseCookie(cookieHeader, name) {
-  if (!cookieHeader) return null;
-  const match = cookieHeader.split(';').map(s => s.trim()).find(s => s.startsWith(name + '='));
-  return match ? decodeURIComponent(match.split('=').slice(1).join('=')) : null;
 }
 
 // ── Server factory ───────────────────────────────────────
@@ -230,7 +164,6 @@ export function createServer({ port = PORT, dataDir = DATA_DIR, allowCreate = AL
     const { slug } = req.params;
     if (!isValidSlug(slug)) return res.status(404).render('home', { error: 'Page introuvable.' });
 
-    const exists = await slugExists(slug);
     const passwords = await readPasswords();
     const hasPassword = !!passwords[slug];
 

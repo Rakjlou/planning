@@ -1,15 +1,13 @@
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { randomBytes, scryptSync } from 'crypto';
+import { isValidSlug, hashPassword, EMPTY_DATA } from './lib/shared.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
-
 export async function createProject(slug, password, dataDir = join(__dirname, 'data')) {
   if (!slug || !password) throw new Error('slug et password requis');
-  if (!SLUG_RE.test(slug)) throw new Error('Slug invalide (3-30 chars, a-z 0-9 et tirets)');
+  if (!isValidSlug(slug)) throw new Error('Slug invalide (3-30 chars, a-z 0-9 et tirets, pas un mot réservé)');
   if (password.length < 4) throw new Error('Le mot de passe doit faire au moins 4 caractères');
 
   await mkdir(dataDir, { recursive: true });
@@ -21,7 +19,7 @@ export async function createProject(slug, password, dataDir = join(__dirname, 'd
     await readFile(dataFile);
     existed = true;
   } catch {
-    await writeFile(dataFile, JSON.stringify({ contributors: [], phases: [], tasks: [], decisionLog: [] }, null, 2));
+    await writeFile(dataFile, JSON.stringify(EMPTY_DATA, null, 2));
   }
 
   // Password entry
@@ -29,9 +27,7 @@ export async function createProject(slug, password, dataDir = join(__dirname, 'd
   let passwords = {};
   try { passwords = JSON.parse(await readFile(passwordsFile, 'utf-8')); } catch {}
 
-  const salt = randomBytes(16).toString('hex');
-  const hash = scryptSync(password, salt, 64).toString('hex');
-  passwords[slug] = { hash, salt };
+  passwords[slug] = hashPassword(password);
   await writeFile(passwordsFile, JSON.stringify(passwords, null, 2));
 
   return { existed };

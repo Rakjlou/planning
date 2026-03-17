@@ -1,8 +1,9 @@
-import { writeFile, unlink, mkdir, rm } from 'fs/promises';
+import { writeFile, mkdir, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { randomBytes, scryptSync, createHmac } from 'crypto';
+import { randomBytes } from 'crypto';
 import { createServer } from '../server.js';
+import { hashPassword, makeAuthToken } from '../lib/shared.js';
 
 export const TEST_SLUG = 'test';
 export const TEST_PASSWORD = 'testpass';
@@ -37,14 +38,10 @@ export async function startServer(seedData = SEED_DATA) {
   await writeFile(join(dataDir, '.secret'), secret);
 
   // Write password entry
-  const salt = randomBytes(16).toString('hex');
-  const hash = scryptSync(TEST_PASSWORD, salt, 64).toString('hex');
-  await writeFile(join(dataDir, 'passwords.json'), JSON.stringify({ [TEST_SLUG]: { hash, salt } }, null, 2));
+  await writeFile(join(dataDir, 'passwords.json'), JSON.stringify({ [TEST_SLUG]: hashPassword(TEST_PASSWORD) }, null, 2));
 
   // Generate auth cookie value
-  const ts = Date.now().toString(36);
-  const hmac = createHmac('sha256', secret).update(TEST_SLUG + ':' + ts).digest('hex');
-  const authToken = ts + ':' + hmac;
+  const authToken = makeAuthToken(TEST_SLUG, secret);
 
   const handle = createServer({ port: 0, dataDir });
   await new Promise(resolve => handle.server.on('listening', resolve));

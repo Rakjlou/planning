@@ -221,12 +221,16 @@ function dashboard() {
 
     // ── Decision helpers ─────────────────────────────────
 
+    decisionStatus(status) {
+      return this.decisionStatuses.find(s => s.v === status) || this.decisionStatuses[0];
+    },
+
     decisionIcon(status) {
-      return (this.decisionStatuses.find(s => s.v === status) || this.decisionStatuses[0]).i;
+      return this.decisionStatus(status).i;
     },
 
     decisionLabel(status) {
-      return (this.decisionStatuses.find(s => s.v === status) || this.decisionStatuses[0]).l;
+      return this.decisionStatus(status).l;
     },
 
     phaseOpenDecisions(phaseId) {
@@ -265,8 +269,7 @@ function dashboard() {
     },
 
     contributorBadgeStyle(name) {
-      const color = this.contributorColor(name);
-      return `background: ${color}20; color: ${color}; border-color: ${color}40`;
+      return this.contributorStyle(name, true);
     },
 
     contributorNames() {
