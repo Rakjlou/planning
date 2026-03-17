@@ -234,12 +234,7 @@ export function createServer({ port = PORT, dataDir = DATA_DIR, allowCreate = AL
     const passwords = await readPasswords();
     const hasPassword = !!passwords[slug];
 
-    if (!exists && !hasPassword) {
-      if (!allowCreate) return res.status(404).render('home', { error: 'Page introuvable.' });
-      return res.render('create', { slug, error: null });
-    }
-
-    if (exists && !hasPassword) {
+    if (!hasPassword) {
       if (!allowCreate) return res.status(404).render('home', { error: 'Page introuvable.' });
       return res.render('create', { slug, error: null });
     }
