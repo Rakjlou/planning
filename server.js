@@ -1,10 +1,11 @@
 import express from 'express';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile, writeFile, mkdir, access } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { randomBytes, scryptSync, timingSafeEqual, createHmac } from 'crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_FILE = join(__dirname, 'data.json');
+const DATA_DIR = join(__dirname, 'data');
 const PORT = process.env.PORT || 3000;
 
 // ── Empty database template ──────────────────────────────
@@ -25,37 +26,129 @@ function nextId(collection, prefix) {
   return prefix + (nums.length ? Math.max(...nums) + 1 : 1);
 }
 
+// ── Slug validation ──────────────────────────────────────
+
+const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
+const SLUG_BLOCKLIST = new Set(['api', 'js', 'css', 'public', 'favicon', 'data']);
+
+function isValidSlug(slug) {
+  return SLUG_RE.test(slug) && !SLUG_BLOCKLIST.has(slug);
+}
+
+// ── Password hashing ─────────────────────────────────────
+
+function hashPassword(password) {
+  const salt = randomBytes(16).toString('hex');
+  const hash = scryptSync(password, salt, 64).toString('hex');
+  return { hash, salt };
+}
+
+function verifyPassword(password, { hash, salt }) {
+  const buf = scryptSync(password, salt, 64);
+  return timingSafeEqual(buf, Buffer.from(hash, 'hex'));
+}
+
+// ── Auth tokens (HMAC cookie) ────────────────────────────
+
+function makeAuthToken(slug, secret) {
+  const ts = Date.now().toString(36);
+  const hmac = createHmac('sha256', secret).update(slug + ':' + ts).digest('hex');
+  return ts + ':' + hmac;
+}
+
+function verifyAuthToken(token, slug, secret, maxAgeMs = 7 * 24 * 3600 * 1000) {
+  if (!token) return false;
+  const parts = token.split(':');
+  if (parts.length !== 2) return false;
+  const [ts, hmac] = parts;
+  const timestamp = parseInt(ts, 36);
+  if (isNaN(timestamp) || Date.now() - timestamp > maxAgeMs) return false;
+  const expected = createHmac('sha256', secret).update(slug + ':' + ts).digest('hex');
+  if (hmac.length !== expected.length) return false;
+  return timingSafeEqual(Buffer.from(hmac), Buffer.from(expected));
+}
+
+function parseCookie(cookieHeader, name) {
+  if (!cookieHeader) return null;
+  const match = cookieHeader.split(';').map(s => s.trim()).find(s => s.startsWith(name + '='));
+  return match ? decodeURIComponent(match.split('=').slice(1).join('=')) : null;
+}
+
 // ── Server factory ───────────────────────────────────────
 
-export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
+export function createServer({ port = PORT, dataDir = DATA_DIR } = {}) {
 
-  // ── JSON read/write with sequential write queue ──────
+  // ── Ensure data directory exists ─────────────────────
 
-  async function readData() {
+  const ready = mkdir(dataDir, { recursive: true });
+
+  // ── App secret (created once, persisted) ─────────────
+
+  const secretFile = join(dataDir, '.secret');
+  const secretP = ready.then(async () => {
     try {
-      return JSON.parse(await readFile(dataFile, 'utf-8'));
-    } catch (err) {
-      if (err.code !== 'ENOENT') throw err;
-      await writeFile(dataFile, JSON.stringify(EMPTY_DATA, null, 2));
-      return structuredClone(EMPTY_DATA);
+      return await readFile(secretFile, 'utf-8');
+    } catch {
+      const secret = randomBytes(32).toString('hex');
+      await writeFile(secretFile, secret);
+      return secret;
+    }
+  });
+
+  // ── Passwords file ───────────────────────────────────
+
+  const passwordsFile = join(dataDir, 'passwords.json');
+
+  async function readPasswords() {
+    try {
+      return JSON.parse(await readFile(passwordsFile, 'utf-8'));
+    } catch {
+      return {};
     }
   }
 
-  let writeQueue = Promise.resolve();
+  async function writePasswords(passwords) {
+    await writeFile(passwordsFile, JSON.stringify(passwords, null, 2));
+  }
 
-  function enqueueWrite(fn) {
-    writeQueue = writeQueue.then(fn).catch(err => {
+  // ── Slug data read/write with per-slug write queues ──
+
+  const writeQueues = new Map();
+
+  function slugFile(slug) {
+    return join(dataDir, `${slug}.json`);
+  }
+
+  async function slugExists(slug) {
+    try { await access(slugFile(slug)); return true; } catch { return false; }
+  }
+
+  async function readData(slug) {
+    try {
+      return JSON.parse(await readFile(slugFile(slug), 'utf-8'));
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err;
+      const data = structuredClone(EMPTY_DATA);
+      await writeFile(slugFile(slug), JSON.stringify(data, null, 2));
+      return data;
+    }
+  }
+
+  function enqueueWrite(slug, fn) {
+    const prev = writeQueues.get(slug) || Promise.resolve();
+    const next = prev.then(fn).catch(err => {
       console.error('Write error:', err);
       throw err;
     });
-    return writeQueue;
+    writeQueues.set(slug, next);
+    return next;
   }
 
-  async function mutate(transformFn) {
-    return enqueueWrite(async () => {
-      const data = await readData();
+  async function mutate(slug, transformFn) {
+    return enqueueWrite(slug, async () => {
+      const data = await readData(slug);
       const result = transformFn(data);
-      await writeFile(dataFile, JSON.stringify(data, null, 2));
+      await writeFile(slugFile(slug), JSON.stringify(data, null, 2));
       return result;
     });
   }
@@ -67,6 +160,7 @@ export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
   app.set('views', join(__dirname, 'views'));
   if (!process.argv.includes('--dev')) app.enable('view cache');
   app.use(express.json());
+  app.use(express.urlencoded({ extended: false }));
   app.use(express.static(join(__dirname, 'public')));
 
   // ── Icon helper for EJS templates ──────────────────────
@@ -83,21 +177,117 @@ export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
     return `<svg class="${ICON_SIZES[size]}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${ICON_PATHS[name]}"/></svg>`;
   }
 
-  app.get('/', async (_req, res) => {
-    const data = await readData();
-    res.render('dashboard', { icon, initialData: JSON.stringify(data) });
+  // ── Auth middleware for API routes ─────────────────────
+
+  async function requireAuth(req, res, next) {
+    const { slug } = req.params;
+    const secret = await secretP;
+    const token = parseCookie(req.headers.cookie, 'auth_' + slug);
+    if (verifyAuthToken(token, slug, secret)) return next();
+    res.status(401).json({ error: 'Non autorisé' });
+  }
+
+  // ── Root page ──────────────────────────────────────────
+
+  app.get('/', (_req, res) => {
+    res.render('home', { error: null });
   });
 
-  // ── GET all data ───────────────────────────────────────
+  // ── Slug pages ─────────────────────────────────────────
 
-  app.get('/api/data', async (_req, res) => {
-    res.json(await readData());
+  app.get('/:slug', async (req, res) => {
+    const { slug } = req.params;
+    if (!isValidSlug(slug)) return res.status(404).render('home', { error: 'Page introuvable.' });
+
+    const exists = await slugExists(slug);
+    const passwords = await readPasswords();
+    const hasPassword = !!passwords[slug];
+
+    if (!exists && !hasPassword) {
+      return res.render('create', { slug, error: null });
+    }
+
+    if (exists && !hasPassword) {
+      return res.render('create', { slug, error: null });
+    }
+
+    const secret = await secretP;
+    const token = parseCookie(req.headers.cookie, 'auth_' + slug);
+    if (!verifyAuthToken(token, slug, secret)) {
+      return res.render('login', { slug, error: null });
+    }
+
+    const data = await readData(slug);
+    res.render('dashboard', { icon, slug, initialData: JSON.stringify(data), apiBase: '/' + slug + '/api' });
+  });
+
+  app.post('/:slug/create', async (req, res) => {
+    const { slug } = req.params;
+    if (!isValidSlug(slug)) return res.status(400).render('home', { error: 'Slug invalide.' });
+
+    const passwords = await readPasswords();
+    if (passwords[slug]) return res.redirect('/' + slug);
+
+    const password = (req.body.password || '').trim();
+    const confirm = (req.body.confirm || '').trim();
+    if (!password || password.length < 4) {
+      return res.render('create', { slug, error: 'Le mot de passe doit faire au moins 4 caractères.' });
+    }
+    if (password !== confirm) {
+      return res.render('create', { slug, error: 'Les mots de passe ne correspondent pas.' });
+    }
+
+    passwords[slug] = hashPassword(password);
+    await writePasswords(passwords);
+
+    const exists = await slugExists(slug);
+    if (!exists) {
+      await writeFile(slugFile(slug), JSON.stringify(EMPTY_DATA, null, 2));
+    }
+
+    const secret = await secretP;
+    const token = makeAuthToken(slug, secret);
+    res.setHeader('Set-Cookie', `auth_${slug}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${7 * 86400}`);
+    res.redirect('/' + slug);
+  });
+
+  app.post('/:slug/login', async (req, res) => {
+    const { slug } = req.params;
+    if (!isValidSlug(slug)) return res.status(400).render('home', { error: 'Slug invalide.' });
+
+    const exists = await slugExists(slug);
+    if (!exists) return res.redirect('/' + slug);
+
+    const password = (req.body.password || '').trim();
+    const passwords = await readPasswords();
+    const cred = passwords[slug];
+
+    if (!cred || !verifyPassword(password, cred)) {
+      return res.render('login', { slug, error: 'Mot de passe incorrect.' });
+    }
+
+    const secret = await secretP;
+    const token = makeAuthToken(slug, secret);
+    res.setHeader('Set-Cookie', `auth_${slug}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${7 * 86400}`);
+    res.redirect('/' + slug);
+  });
+
+  app.post('/:slug/logout', (req, res) => {
+    const { slug } = req.params;
+    res.setHeader('Set-Cookie', `auth_${slug}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0`);
+    res.redirect('/' + slug);
+  });
+
+  // ── API routes (slug-scoped, auth-protected) ───────────
+
+  app.get('/:slug/api/data', requireAuth, async (req, res) => {
+    res.json(await readData(req.params.slug));
   });
 
   // ── Phases CRUD ────────────────────────────────────────
 
-  app.post('/api/phases', async (req, res) => {
-    const phase = await mutate(data => {
+  app.post('/:slug/api/phases', requireAuth, async (req, res) => {
+    const phase = await mutate(req.params.slug, data => {
       const phase = {
         id: nextId(data.phases, 'phase-'),
         name: req.body.name || '',
@@ -108,8 +298,8 @@ export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
     res.status(201).json(phase);
   });
 
-  app.put('/api/phases/:id', async (req, res) => {
-    const updated = await mutate(data => {
+  app.put('/:slug/api/phases/:id', requireAuth, async (req, res) => {
+    const updated = await mutate(req.params.slug, data => {
       const phase = data.phases.find(p => p.id === req.params.id);
       if (!phase) return null;
       Object.assign(phase, req.body, { id: phase.id });
@@ -119,8 +309,8 @@ export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
     res.json(updated);
   });
 
-  app.delete('/api/phases/:id', async (req, res) => {
-    await mutate(data => {
+  app.delete('/:slug/api/phases/:id', requireAuth, async (req, res) => {
+    await mutate(req.params.slug, data => {
       data.phases = data.phases.filter(p => p.id !== req.params.id);
       data.tasks = data.tasks.filter(t => t.phase !== req.params.id);
     });
@@ -129,9 +319,9 @@ export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
 
   // ── Tasks CRUD ─────────────────────────────────────────
 
-  app.post('/api/tasks', async (req, res) => {
+  app.post('/:slug/api/tasks', requireAuth, async (req, res) => {
     try {
-      const task = await mutate(data => {
+      const task = await mutate(req.params.slug, data => {
         if (req.body.isReleaseDate && data.tasks.some(t => t.isReleaseDate)) {
           throw new Error('Une tâche est déjà marquée comme date de sortie');
         }
@@ -155,9 +345,9 @@ export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
     }
   });
 
-  app.put('/api/tasks/:id', async (req, res) => {
+  app.put('/:slug/api/tasks/:id', requireAuth, async (req, res) => {
     try {
-      const updated = await mutate(data => {
+      const updated = await mutate(req.params.slug, data => {
         const task = data.tasks.find(t => t.id === req.params.id);
         if (!task) return null;
         if (req.body.isReleaseDate && !task.isReleaseDate && data.tasks.some(t => t.isReleaseDate)) {
@@ -173,8 +363,8 @@ export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
     }
   });
 
-  app.delete('/api/tasks/:id', async (req, res) => {
-    await mutate(data => {
+  app.delete('/:slug/api/tasks/:id', requireAuth, async (req, res) => {
+    await mutate(req.params.slug, data => {
       data.tasks = data.tasks.filter(t => t.id !== req.params.id);
     });
     res.json({ ok: true });
@@ -182,8 +372,8 @@ export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
 
   // ── Decision log (append-only) ─────────────────────────
 
-  app.post('/api/decision-log', async (req, res) => {
-    const entry = await mutate(data => {
+  app.post('/:slug/api/decision-log', requireAuth, async (req, res) => {
+    const entry = await mutate(req.params.slug, data => {
       const entry = {
         date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
         text: req.body.text || '',
@@ -196,10 +386,10 @@ export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
 
   // ── Contributors CRUD ──────────────────────────────────
 
-  app.post('/api/contributors', async (req, res) => {
+  app.post('/:slug/api/contributors', requireAuth, async (req, res) => {
     const name = (req.body.name || '').trim();
     if (!name) return res.status(400).json({ error: 'Name required' });
-    const result = await mutate(data => {
+    const result = await mutate(req.params.slug, data => {
       if (!data.contributors) data.contributors = [];
       if (data.contributors.includes(name)) return null;
       data.contributors.push(name);
@@ -209,9 +399,9 @@ export function createServer({ port = PORT, dataFile = DATA_FILE } = {}) {
     res.status(201).json({ name: result });
   });
 
-  app.delete('/api/contributors/:name', async (req, res) => {
+  app.delete('/:slug/api/contributors/:name', requireAuth, async (req, res) => {
     const name = decodeURIComponent(req.params.name);
-    await mutate(data => {
+    await mutate(req.params.slug, data => {
       if (!data.contributors) data.contributors = [];
       data.contributors = data.contributors.filter(c => c !== name);
       for (const task of data.tasks) {

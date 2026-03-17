@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= slug %></title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @theme {
+      --color-cod-dark: #0f0f0f;
+      --color-cod-bg: #1a1a1a;
+      --color-cod-card: #242424;
+      --color-cod-border: #333;
+      --color-cod-text: #e0e0e0;
+      --color-cod-muted: #888;
+      --color-cod-accent: #f59e0b;
+      --color-cod-red: #ef4444;
+    }
+    body { background: var(--color-cod-dark); color: var(--color-cod-text); }
+  </style>
+</head>
+<body class="min-h-screen font-sans flex items-center justify-center">
+  <div class="w-full max-w-sm px-6">
+    <h1 class="text-cod-muted text-sm tracking-widest uppercase text-center mb-1">Retroplanning</h1>
+    <p class="text-cod-text text-center text-lg font-semibold mb-8"><%= slug %></p>
+    <form action="/<%= slug %>/login" method="POST">
+      <input type="password" name="password" placeholder="Mot de passe" required autofocus
+             class="w-full bg-cod-card border border-cod-border rounded px-4 py-3 text-cod-text text-center placeholder:text-cod-muted focus:outline-none focus:border-cod-accent transition">
+      <button type="submit" class="w-full mt-3 bg-cod-accent text-cod-dark py-3 rounded font-semibold hover:brightness-110 transition">
+        Entrer
+      </button>
+    </form>
+    <% if (error) { %>
+      <p class="text-cod-red text-sm text-center mt-4"><%= error %></p>
+    <% } %>
+  </div>
+</body>
+</html>

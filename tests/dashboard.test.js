@@ -19,9 +19,10 @@ after(async () => {
 async function setup() {
   srv = await startServer();
   const ctx = await browser.newContext();
+  await ctx.addCookies([srv.authCookie]);
   page = await ctx.newPage();
   page.setDefaultTimeout(TIMEOUT);
-  await page.goto(srv.baseURL);
+  await page.goto(srv.slugURL);
   // Wait for Alpine to render the phase names (proves API data loaded + hydrated)
   await page.waitForFunction(() => {
     const names = document.querySelectorAll('.space-y-4 .font-bold.text-white');

@@ -98,7 +98,7 @@ function dashboard() {
     async api(method, path, body) {
       const opts = { method, headers: { 'Content-Type': 'application/json' } };
       if (body) opts.body = JSON.stringify(body);
-      const res = await fetch('/api/' + path, opts);
+      const res = await fetch(window.__API_BASE__ + '/' + path, opts);
       return res.json();
     },
 

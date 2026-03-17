@@ -1,8 +1,11 @@
-import { writeFile, unlink } from 'fs/promises';
+import { writeFile, unlink, mkdir, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { randomBytes } from 'crypto';
+import { randomBytes, scryptSync, createHmac } from 'crypto';
 import { createServer } from '../server.js';
+
+export const TEST_SLUG = 'test';
+export const TEST_PASSWORD = 'testpass';
 
 export const SEED_DATA = {
   contributors: ['Alice', 'Bob'],
@@ -23,19 +26,39 @@ export const SEED_DATA = {
 
 export async function startServer(seedData = SEED_DATA) {
   const id = randomBytes(6).toString('hex');
-  const dataFile = join(tmpdir(), `retroplanning-test-${id}.json`);
-  await writeFile(dataFile, JSON.stringify(seedData, null, 2));
+  const dataDir = join(tmpdir(), `retroplanning-test-${id}`);
+  await mkdir(dataDir, { recursive: true });
 
-  const handle = createServer({ port: 0, dataFile });
-  // wait for the server to be listening
+  // Write slug data file
+  await writeFile(join(dataDir, `${TEST_SLUG}.json`), JSON.stringify(seedData, null, 2));
+
+  // Write app secret
+  const secret = randomBytes(32).toString('hex');
+  await writeFile(join(dataDir, '.secret'), secret);
+
+  // Write password entry
+  const salt = randomBytes(16).toString('hex');
+  const hash = scryptSync(TEST_PASSWORD, salt, 64).toString('hex');
+  await writeFile(join(dataDir, 'passwords.json'), JSON.stringify({ [TEST_SLUG]: { hash, salt } }, null, 2));
+
+  // Generate auth cookie value
+  const ts = Date.now().toString(36);
+  const hmac = createHmac('sha256', secret).update(TEST_SLUG + ':' + ts).digest('hex');
+  const authToken = ts + ':' + hmac;
+
+  const handle = createServer({ port: 0, dataDir });
   await new Promise(resolve => handle.server.on('listening', resolve));
 
+  const baseURL = `http://localhost:${handle.port()}`;
+
   return {
-    baseURL: `http://localhost:${handle.port()}`,
-    dataFile,
+    baseURL,
+    slugURL: `${baseURL}/${TEST_SLUG}`,
+    dataDir,
+    authCookie: { name: `auth_${TEST_SLUG}`, value: encodeURIComponent(authToken), url: baseURL },
     async close() {
       await handle.close();
-      try { await unlink(dataFile); } catch {}
+      try { await rm(dataDir, { recursive: true }); } catch {}
     },
   };
 }
