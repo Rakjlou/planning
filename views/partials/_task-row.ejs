@@ -94,13 +94,12 @@
     <template x-if="editingTask === task.id && contributors.length > 0">
       <div class="flex items-center gap-1.5 mt-2 flex-wrap" @click.stop>
         <span class="text-xs text-cod-muted">Qui :</span>
-        <template x-for="name in contributors" :key="name">
-          <button @click="toggleContributor(task, name)"
+        <template x-for="contrib in contributors" :key="contrib.name">
+          <button @click="toggleContributor(task, contrib.name)"
                   class="text-xs px-2 py-0.5 rounded-full border transition"
-                  :class="(task.contributors || []).includes(name)
-                    ? 'bg-cod-blue/15 text-cod-blue border-cod-blue/25'
-                    : 'text-cod-muted border-cod-border hover:border-cod-blue/40'">
-            <span x-text="name"></span>
+                  :class="!(task.contributors || []).includes(contrib.name) ? 'text-cod-muted border-cod-border' : ''"
+                  :style="(task.contributors || []).includes(contrib.name) ? contributorStyle(contrib.name, true) : ''">
+            <span x-text="contrib.name"></span>
           </button>
         </template>
       </div>

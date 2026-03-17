@@ -246,6 +246,33 @@ function dashboard() {
 
     // ── Contributors ────────────────────────────────────
 
+    contributorColors: [
+      '#a78bfa', '#f472b6', '#22d3ee', '#2dd4bf', '#fb7185',
+      '#818cf8', '#a3e635', '#e879f9', '#38bdf8', '#fcd34d',
+    ],
+
+    contributorColor(name) {
+      const c = this.contributors.find(c => c.name === name);
+      return c ? c.color : '#888';
+    },
+
+    contributorStyle(name, selected) {
+      const color = this.contributorColor(name);
+      if (selected) {
+        return `background: ${color}20; color: ${color}; border-color: ${color}40`;
+      }
+      return '';
+    },
+
+    contributorBadgeStyle(name) {
+      const color = this.contributorColor(name);
+      return `background: ${color}20; color: ${color}; border-color: ${color}40`;
+    },
+
+    contributorNames() {
+      return this.contributors.map(c => c.name);
+    },
+
     phaseContributors(phaseId) {
       const names = new Set();
       for (const t of this.tasks) {
@@ -274,17 +301,25 @@ function dashboard() {
     async addContributor() {
       const name = this.newContributor.trim();
       if (!name) return;
-      await this.api('POST', 'contributors', { name });
-      this.contributors.push(name);
-      this.newContributor = '';
+      const result = await this.api('POST', 'contributors', { name });
+      if (result.name) {
+        this.contributors.push(result);
+        this.newContributor = '';
+      }
     },
 
     async removeContributor(name) {
       await this.api('DELETE', `contributors/${encodeURIComponent(name)}`);
-      this.contributors = this.contributors.filter(c => c !== name);
+      this.contributors = this.contributors.filter(c => c.name !== name);
       for (const t of this.tasks) {
         if (t.contributors) t.contributors = t.contributors.filter(c => c !== name);
       }
+    },
+
+    async changeContributorColor(name, color) {
+      const result = await this.api('PUT', `contributors/${encodeURIComponent(name)}`, { color });
+      const idx = this.contributors.findIndex(c => c.name === name);
+      if (idx >= 0) this.contributors[idx].color = result.color;
     },
 
     // ── Phase display helpers ────────────────────────────

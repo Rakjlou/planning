@@ -107,11 +107,25 @@
       </button>
       <div x-show="managingContributors" x-collapse class="mt-2 bg-cod-card rounded-lg border border-cod-border p-4">
         <div class="flex flex-wrap gap-2 mb-3" x-show="contributors.length > 0">
-          <template x-for="name in contributors" :key="name">
-            <span class="inline-flex items-center gap-1.5 text-sm px-2.5 py-1 rounded-full bg-cod-blue/15 text-cod-blue border border-cod-blue/25">
-              <span x-text="name"></span>
-              <button @click="removeContributor(name)" class="hover:text-cod-red transition text-xs" title="Retirer">&times;</button>
-            </span>
+          <template x-for="contrib in contributors" :key="contrib.name">
+            <div class="relative" x-data="{ pickingColor: false }">
+              <span class="inline-flex items-center gap-1.5 text-sm px-2.5 py-1 rounded-full border"
+                    :style="contributorBadgeStyle(contrib.name)">
+                <button @click="pickingColor = !pickingColor" class="w-2.5 h-2.5 rounded-full shrink-0 border border-white/20 cursor-pointer hover:scale-125 transition-transform" :style="'background:' + contrib.color" title="Changer la couleur"></button>
+                <span x-text="contrib.name"></span>
+                <button @click="removeContributor(contrib.name)" class="hover:text-cod-red transition text-xs" title="Retirer">&times;</button>
+              </span>
+              <!-- Color picker dropdown -->
+              <div x-show="pickingColor" @click.away="pickingColor = false" class="absolute top-full left-0 mt-1 bg-cod-card border border-cod-border rounded-lg p-2 flex gap-1.5 z-50 shadow-lg">
+                <template x-for="color in contributorColors" :key="color">
+                  <button @click="changeContributorColor(contrib.name, color); pickingColor = false"
+                          class="w-5 h-5 rounded-full border-2 transition-transform hover:scale-125 cursor-pointer"
+                          :class="color === contrib.color ? 'border-white scale-110' : 'border-transparent'"
+                          :style="'background:' + color"
+                          :title="color"></button>
+                </template>
+              </div>
+            </div>
           </template>
         </div>
         <div class="flex gap-2 items-center">

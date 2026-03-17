@@ -9,6 +9,21 @@ const DATA_DIR = join(__dirname, 'data');
 const PORT = process.env.PORT || 3000;
 const ALLOW_CREATE = process.env.ALLOW_CREATE === 'true';
 
+// ── Contributor color palette ────────────────────────────
+
+const CONTRIBUTOR_COLORS = [
+  '#a78bfa', // violet
+  '#f472b6', // pink
+  '#22d3ee', // cyan
+  '#2dd4bf', // teal
+  '#fb7185', // rose
+  '#818cf8', // indigo
+  '#a3e635', // lime
+  '#e879f9', // fuchsia
+  '#38bdf8', // sky
+  '#fcd34d', // amber
+];
+
 // ── Empty database template ──────────────────────────────
 
 const EMPTY_DATA = {
@@ -124,9 +139,24 @@ export function createServer({ port = PORT, dataDir = DATA_DIR } = {}) {
     try { await access(slugFile(slug)); return true; } catch { return false; }
   }
 
+  function migrateContributors(data) {
+    if (!data.contributors) { data.contributors = []; return; }
+    const usedColors = new Set(data.contributors.filter(c => typeof c === 'object' && c.color).map(c => c.color));
+    data.contributors = data.contributors.map(c => {
+      if (typeof c === 'string') {
+        const color = CONTRIBUTOR_COLORS.find(col => !usedColors.has(col)) || CONTRIBUTOR_COLORS[0];
+        usedColors.add(color);
+        return { name: c, color };
+      }
+      return c;
+    });
+  }
+
   async function readData(slug) {
     try {
-      return JSON.parse(await readFile(slugFile(slug), 'utf-8'));
+      const data = JSON.parse(await readFile(slugFile(slug), 'utf-8'));
+      migrateContributors(data);
+      return data;
     } catch (err) {
       if (err.code !== 'ENOENT') throw err;
       const data = structuredClone(EMPTY_DATA);
@@ -393,21 +423,41 @@ export function createServer({ port = PORT, dataDir = DATA_DIR } = {}) {
   app.post('/:slug/api/contributors', requireAuth, async (req, res) => {
     const name = (req.body.name || '').trim();
     if (!name) return res.status(400).json({ error: 'Name required' });
+    let color = req.body.color || null;
+    if (color && !CONTRIBUTOR_COLORS.includes(color)) color = null;
     const result = await mutate(req.params.slug, data => {
       if (!data.contributors) data.contributors = [];
-      if (data.contributors.includes(name)) return null;
-      data.contributors.push(name);
-      return name;
+      if (data.contributors.some(c => c.name === name)) return null;
+      const usedColors = new Set(data.contributors.map(c => c.color));
+      if (!color) color = CONTRIBUTOR_COLORS.find(c => !usedColors.has(c)) || CONTRIBUTOR_COLORS[0];
+      const contributor = { name, color };
+      data.contributors.push(contributor);
+      return contributor;
     });
     if (result === null) return res.status(409).json({ error: 'Already exists' });
-    res.status(201).json({ name: result });
+    res.status(201).json(result);
+  });
+
+  app.put('/:slug/api/contributors/:name', requireAuth, async (req, res) => {
+    const name = decodeURIComponent(req.params.name);
+    const color = req.body.color;
+    if (!color || !CONTRIBUTOR_COLORS.includes(color)) return res.status(400).json({ error: 'Invalid color' });
+    const result = await mutate(req.params.slug, data => {
+      if (!data.contributors) data.contributors = [];
+      const contributor = data.contributors.find(c => c.name === name);
+      if (!contributor) return null;
+      contributor.color = color;
+      return contributor;
+    });
+    if (result === null) return res.status(404).json({ error: 'Not found' });
+    res.json(result);
   });
 
   app.delete('/:slug/api/contributors/:name', requireAuth, async (req, res) => {
     const name = decodeURIComponent(req.params.name);
     await mutate(req.params.slug, data => {
       if (!data.contributors) data.contributors = [];
-      data.contributors = data.contributors.filter(c => c !== name);
+      data.contributors = data.contributors.filter(c => c.name !== name);
       for (const task of data.tasks) {
         if (task.contributors) {
           task.contributors = task.contributors.filter(c => c !== name);

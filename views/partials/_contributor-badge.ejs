@@ -1,3 +1,4 @@
 <%# Contributor badge — used inside x-for="name in ..." loops %>
-<span class="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-cod-blue/15 text-cod-blue border border-cod-blue/25"
+<span class="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border"
+      :style="contributorBadgeStyle(name)"
       x-text="name"></span>

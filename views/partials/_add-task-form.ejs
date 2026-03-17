@@ -13,13 +13,12 @@
     <template x-if="contributors.length > 0">
       <div class="flex items-center gap-1.5 flex-wrap">
         <span class="text-xs text-cod-muted">Qui :</span>
-        <template x-for="name in contributors" :key="name">
-          <button type="button" @click="toggleNewTaskContributor(name)"
+        <template x-for="contrib in contributors" :key="contrib.name">
+          <button type="button" @click="toggleNewTaskContributor(contrib.name)"
                   class="text-xs px-2 py-0.5 rounded-full border transition"
-                  :class="(newTask.contributors || []).includes(name)
-                    ? 'bg-cod-blue/15 text-cod-blue border-cod-blue/25'
-                    : 'text-cod-muted border-cod-border hover:border-cod-blue/40'">
-            <span x-text="name"></span>
+                  :class="!(newTask.contributors || []).includes(contrib.name) ? 'text-cod-muted border-cod-border' : ''"
+                  :style="(newTask.contributors || []).includes(contrib.name) ? contributorStyle(contrib.name, true) : ''">
+            <span x-text="contrib.name"></span>
           </button>
         </template>
       </div>
