@@ -7,6 +7,7 @@ import { randomBytes, scryptSync, timingSafeEqual, createHmac } from 'crypto';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, 'data');
 const PORT = process.env.PORT || 3000;
+const ALLOW_CREATE = process.env.ALLOW_CREATE === 'true';
 
 // ── Empty database template ──────────────────────────────
 
@@ -204,10 +205,12 @@ export function createServer({ port = PORT, dataDir = DATA_DIR } = {}) {
     const hasPassword = !!passwords[slug];
 
     if (!exists && !hasPassword) {
+      if (!ALLOW_CREATE) return res.status(404).render('home', { error: 'Page introuvable.' });
       return res.render('create', { slug, error: null });
     }
 
     if (exists && !hasPassword) {
+      if (!ALLOW_CREATE) return res.status(404).render('home', { error: 'Page introuvable.' });
       return res.render('create', { slug, error: null });
     }
 
@@ -222,6 +225,7 @@ export function createServer({ port = PORT, dataDir = DATA_DIR } = {}) {
   });
 
   app.post('/:slug/create', async (req, res) => {
+    if (!ALLOW_CREATE) return res.status(403).render('home', { error: 'Création de pages désactivée.' });
     const { slug } = req.params;
     if (!isValidSlug(slug)) return res.status(400).render('home', { error: 'Slug invalide.' });
 
