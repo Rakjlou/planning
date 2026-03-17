@@ -387,3 +387,100 @@ describe('Création de phase', () => {
     assert.ok(names.some(n => n.includes('Phase Gamma')));
   });
 });
+
+// ── Couleurs de contributeurs ─────────────────────────────
+
+describe('Couleurs de contributeurs', () => {
+  before(setup);
+  after(teardown);
+
+  // The contributor management panel (inside x-collapse)
+  const contribPanel = () => page.locator('[x-collapse]').first();
+  // A contributor badge wrapper (the <div class="relative"> containing the badge span)
+  const contribBadge = (name) => contribPanel().locator(`span.rounded-full.border:has(span:text("${name}"))`);
+
+  it('les contributeurs migrés ont chacun une couleur distincte', async () => {
+    // Open contributors section
+    await page.locator('button', { hasText: 'Contributeurs' }).click();
+    await contribPanel().waitFor({ state: 'visible', timeout: TIMEOUT });
+
+    // Both seed contributors should be visible
+    await contribBadge('Alice').waitFor({ state: 'visible', timeout: TIMEOUT });
+    await contribBadge('Bob').waitFor({ state: 'visible', timeout: TIMEOUT });
+
+    // Each badge should have an inline style with a color
+    const aliceStyle = await contribBadge('Alice').getAttribute('style');
+    assert.ok(aliceStyle && aliceStyle.includes('color:'), 'Alice badge should have inline color style');
+    const bobStyle = await contribBadge('Bob').getAttribute('style');
+    assert.ok(bobStyle && bobStyle.includes('color:'), 'Bob badge should have inline color style');
+
+    // Colors should be different
+    assert.notEqual(aliceStyle, bobStyle, 'Alice and Bob should have different colors');
+  });
+
+  it('ajout d\'un contributeur → couleur auto-assignée', async () => {
+    const input = contribPanel().locator('input[placeholder="Ajouter un contributeur..."]');
+    await input.fill('Charlie');
+    await input.press('Enter');
+    await contribBadge('Charlie').waitFor({ state: 'visible', timeout: TIMEOUT });
+
+    const style = await contribBadge('Charlie').getAttribute('style');
+    assert.ok(style && style.includes('color:'), 'New contributor should have a color');
+  });
+
+  it('color picker s\'ouvre et permet de changer la couleur', async () => {
+    const styleBefore = await contribBadge('Alice').getAttribute('style');
+
+    // Click the small color dot button inside Alice's badge
+    await contribBadge('Alice').locator('button.rounded-full').first().click();
+
+    // Color picker dropdown should appear — it's a sibling div inside the same parent <div class="relative">
+    const aliceWrapper = contribBadge('Alice').locator('..');
+    const picker = aliceWrapper.locator('div.flex.gap-1\\.5');
+    await picker.waitFor({ state: 'visible', timeout: TIMEOUT });
+
+    // Should have 10 color options
+    const colorButtons = picker.locator('button.rounded-full');
+    const count = await colorButtons.count();
+    assert.equal(count, 10, 'Should have 10 color options');
+
+    // Click the last color
+    await colorButtons.last().click();
+    await picker.waitFor({ state: 'hidden', timeout: TIMEOUT });
+
+    const styleAfter = await contribBadge('Alice').getAttribute('style');
+    assert.notEqual(styleBefore, styleAfter, 'Color should have changed');
+  });
+
+  it('couleurs persistent après reload', async () => {
+    const styleBefore = await contribBadge('Alice').getAttribute('style');
+
+    await page.reload();
+    await page.waitForFunction(() => {
+      const names = document.querySelectorAll('.space-y-4 .font-bold.text-white');
+      return names.length >= 2;
+    }, { timeout: TIMEOUT });
+
+    // Re-open contributors section
+    await page.locator('button', { hasText: 'Contributeurs' }).click();
+    await contribPanel().waitFor({ state: 'visible', timeout: TIMEOUT });
+
+    const styleAfter = await contribBadge('Alice').getAttribute('style');
+    assert.equal(styleBefore, styleAfter, 'Color should persist after reload');
+  });
+
+  it('suppression et ajout → nouveau contributeur reçoit une couleur', async () => {
+    // Remove Charlie
+    await contribBadge('Charlie').locator('button:text("×")').click();
+    await contribBadge('Charlie').waitFor({ state: 'hidden', timeout: TIMEOUT });
+
+    // Add Dave
+    const input = contribPanel().locator('input[placeholder="Ajouter un contributeur..."]');
+    await input.fill('Dave');
+    await input.press('Enter');
+    await contribBadge('Dave').waitFor({ state: 'visible', timeout: TIMEOUT });
+
+    const daveStyle = await contribBadge('Dave').getAttribute('style');
+    assert.ok(daveStyle && daveStyle.includes('color:'), 'Dave should have a color');
+  });
+});
