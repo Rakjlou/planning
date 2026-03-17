@@ -25,7 +25,7 @@ describe('create-project E2E', () => {
     await createProject('myproject', 'secret42', dataDir);
 
     // Start server pointing to that dataDir
-    handle = createServer({ port: 0, dataDir });
+    handle = createServer({ port: 0, dataDir, allowCreate: true });
     await new Promise(resolve => handle.server.on('listening', resolve));
     baseURL = `http://localhost:${handle.port()}`;
 

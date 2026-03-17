@@ -92,7 +92,7 @@ function parseCookie(cookieHeader, name) {
 
 // ── Server factory ───────────────────────────────────────
 
-export function createServer({ port = PORT, dataDir = DATA_DIR } = {}) {
+export function createServer({ port = PORT, dataDir = DATA_DIR, allowCreate = ALLOW_CREATE } = {}) {
 
   // ── Ensure data directory exists ─────────────────────
 
@@ -235,12 +235,12 @@ export function createServer({ port = PORT, dataDir = DATA_DIR } = {}) {
     const hasPassword = !!passwords[slug];
 
     if (!exists && !hasPassword) {
-      if (!ALLOW_CREATE) return res.status(404).render('home', { error: 'Page introuvable.' });
+      if (!allowCreate) return res.status(404).render('home', { error: 'Page introuvable.' });
       return res.render('create', { slug, error: null });
     }
 
     if (exists && !hasPassword) {
-      if (!ALLOW_CREATE) return res.status(404).render('home', { error: 'Page introuvable.' });
+      if (!allowCreate) return res.status(404).render('home', { error: 'Page introuvable.' });
       return res.render('create', { slug, error: null });
     }
 
@@ -255,7 +255,7 @@ export function createServer({ port = PORT, dataDir = DATA_DIR } = {}) {
   });
 
   app.post('/:slug/create', async (req, res) => {
-    if (!ALLOW_CREATE) return res.status(403).render('home', { error: 'Création de pages désactivée.' });
+    if (!allowCreate) return res.status(403).render('home', { error: 'Création de pages désactivée.' });
     const { slug } = req.params;
     if (!isValidSlug(slug)) return res.status(400).render('home', { error: 'Slug invalide.' });
 
