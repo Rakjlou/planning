@@ -27,14 +27,14 @@
     <button @click="createTask(phase.id)" class="text-cod-muted hover:text-cod-green p-2.5 rounded-full hover:bg-cod-green/10 transition-colors" title="Ajouter">
       <%- icon('check', 'lg') %>
     </button>
-    <button @click="addingTaskPhase = null" class="text-cod-muted hover:text-white p-2.5 rounded-full hover:bg-cod-border/50 transition-colors" title="Annuler">
+    <button @click="guardedCancelAllEditing()" class="text-cod-muted hover:text-white p-2.5 rounded-full hover:bg-cod-border/50 transition-colors" title="Annuler">
       <%- icon('cancel', 'lg') %>
     </button>
   </div>
 </div>
 
 <button x-show="addingTaskPhase !== phase.id"
-        @click.stop="cancelAllEditing(); addingTaskPhase = phase.id; newTask = { text: '', deadlineDate: '', notes: '', needsDecision: false, contributors: [] }"
+        @click.stop="if (!guardedCancelAllEditing()) return; addingTaskPhase = phase.id"
         class="text-sm text-cod-muted hover:text-cod-accent mt-2 transition block w-full text-left px-3 py-2">
   + Ajouter une tâche
 </button>

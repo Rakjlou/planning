@@ -76,7 +76,7 @@
   </style>
 </head>
 
-<body class="min-h-screen font-sans" x-data="dashboard()" x-init="loadData()" @keydown.window.escape="cancelAllEditing()" @click="cancelAllEditing()">
+<body class="min-h-screen font-sans" x-data="dashboard()" x-init="loadData()" @keydown.window.escape="guardedCancelAllEditing()" @click="guardedCancelAllEditing()">
 
   <%- include('partials/_header') %>
 

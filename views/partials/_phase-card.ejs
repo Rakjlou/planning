@@ -78,7 +78,7 @@
       <!-- Read mode: edit + delete -->
       <template x-if="editingPhase !== phase.id">
         <div class="flex items-center gap-1">
-          <button @click="cancelAllEditing(); editingPhase = phase.id; editPhaseData = {...phase}"
+          <button @click="if (!guardedCancelAllEditing()) return; editingPhase = phase.id; editPhaseData = {...phase}"
                   class="text-cod-muted hover:text-cod-accent p-2 rounded-full hover:bg-cod-accent/10 transition-colors" title="Modifier">
             <%- icon('edit', 'md') %>
           </button>
@@ -91,7 +91,7 @@
           <button @click="savePhase(phase.id)" class="text-cod-muted hover:text-cod-green p-2 rounded-full hover:bg-cod-green/10 transition-colors" title="Enregistrer">
             <%- icon('check', 'lg') %>
           </button>
-          <button @click="editingPhase = null" class="text-cod-muted hover:text-white p-2 rounded-full hover:bg-cod-border/50 transition-colors" title="Annuler">
+          <button @click="guardedCancelAllEditing()" class="text-cod-muted hover:text-white p-2 rounded-full hover:bg-cod-border/50 transition-colors" title="Annuler">
             <%- icon('cancel', 'lg') %>
           </button>
           <%- include('_delete-confirm', { deleteKey: "'phase-' + phase.id", deleteAction: "deletePhase(phase.id)" }) %>

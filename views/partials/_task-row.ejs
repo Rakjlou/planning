@@ -5,7 +5,7 @@
        'bg-cod-accent/5': editingTask === task.id,
        'hover:bg-cod-card/50': editingTask !== task.id
      }"
-     @click="if (editingTask !== task.id) { cancelAllEditing(); editingTask = task.id; editTaskData = JSON.parse(JSON.stringify(task)); }">
+     @click="if (editingTask !== task.id) { if (!guardedCancelAllEditing()) return; editingTask = task.id; editTaskData = JSON.parse(JSON.stringify(task)); }">
 
   <!-- Checkbox -->
   <button @click.stop="toggleTask(task)" class="custom-check mt-1" :class="task.done ? 'checked' : ''">
@@ -120,7 +120,7 @@
         <button @click="saveTask(task.id)" class="text-cod-muted hover:text-cod-green p-2 rounded-full hover:bg-cod-green/10 transition-colors" title="Enregistrer">
           <%- icon('check', 'lg') %>
         </button>
-        <button @click.stop="editingTask = null" class="text-cod-muted hover:text-white p-2 rounded-full hover:bg-cod-border/50 transition-colors" title="Annuler">
+        <button @click.stop="guardedCancelAllEditing()" class="text-cod-muted hover:text-white p-2 rounded-full hover:bg-cod-border/50 transition-colors" title="Annuler">
           <%- icon('cancel', 'lg') %>
         </button>
         <%- include('_delete-confirm', { deleteKey: "task.id", deleteAction: "deleteTask(task.id)", confirmTitle: "Confirmer la suppression", size: "lg" }) %>

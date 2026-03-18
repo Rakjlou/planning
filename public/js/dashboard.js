@@ -46,6 +46,41 @@ function dashboard() {
       this.creatingPhase = false;
       this.confirmingDelete = null;
       this.managingContributors = false;
+      this.newTask = { text: '', deadlineDate: '', notes: '', needsDecision: false, contributors: [] };
+      this.editTaskData = {};
+    },
+
+    hasUnsavedNewTask() {
+      return this.addingTaskPhase !== null && (
+        this.newTask.text.trim() !== '' ||
+        this.newTask.deadlineDate !== '' ||
+        this.newTask.notes.trim() !== '' ||
+        (this.newTask.contributors || []).length > 0
+      );
+    },
+
+    hasUnsavedEditTask() {
+      if (!this.editingTask) return false;
+      const orig = this.tasks.find(t => t.id === this.editingTask);
+      if (!orig) return false;
+      return this.editTaskData.text !== orig.text ||
+             this.editTaskData.deadlineDate !== orig.deadlineDate ||
+             (this.editTaskData.notes || '') !== (orig.notes || '');
+    },
+
+    hasUnsavedEditPhase() {
+      if (!this.editingPhase) return false;
+      const orig = this.phases.find(p => p.id === this.editingPhase);
+      if (!orig) return false;
+      return this.editPhaseData.name !== orig.name;
+    },
+
+    guardedCancelAllEditing() {
+      if (this.hasUnsavedNewTask() || this.hasUnsavedEditTask() || this.hasUnsavedEditPhase()) {
+        if (!confirm('Vous avez des modifications non enregistrées. Abandonner ?')) return false;
+      }
+      this.cancelAllEditing();
+      return true;
     },
 
     // ── Computed ──────────────────────────────────────────
